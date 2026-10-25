@@ -1,6 +1,6 @@
 {
-  "generated_at_utc": "2026-10-25T20:13:44.614967+00:00",
-  "generated_at_ist": "2026-10-26 01:43:44 Asia/Calcutta",
+  "generated_at_utc": "2026-10-25T20:43:37.604686+00:00",
+  "generated_at_ist": "2026-10-26 02:13:37 Asia/Calcutta",
   "disclaimer": "Credit field aid for Gujarat industry health-check. Listed names are industry PROXIES, not a buy list. Not investment advice. Not an HDFC loan-advisory product. Failed fetches are null with warnings \u2014 never invented.",
   "market": {
     "nifty": {
@@ -500,117 +500,179 @@
     "gsdp_yoy": {
       "name": "Gujarat GSDP growth YoY",
       "value": null,
+      "display": null,
       "unit": "%",
       "as_of": null,
       "direction": "unknown",
-      "source": "State budget / MoSPI state accounts \u2014 manual",
-      "source_url": null,
-      "error": "not auto-fetched \u2014 enter manually or AI-fill (tagged ai)",
-      "evidence": "unknown"
+      "source": "MoSPI state accounts / PRS / state budget \u2014 soft hint only",
+      "source_url": "https://www.mospi.gov.in/",
+      "error": "not auto-fetched \u2014 do not invent; paste from MoSPI/PRS",
+      "evidence": "unknown",
+      "note": "Source hint: MoSPI / PRS India state finances",
+      "raw": null
     },
     "iip_gujarat": {
       "name": "Gujarat IIP / industrial activity YoY",
       "value": null,
+      "display": null,
       "unit": "%",
       "as_of": null,
       "direction": "unknown",
-      "source": "State DES / MoSPI \u2014 manual",
-      "source_url": null,
-      "error": "not auto-fetched \u2014 enter manually or AI-fill (tagged ai)",
-      "evidence": "unknown"
+      "source": "State DES / MoSPI \u2014 soft hint only",
+      "source_url": "https://www.mospi.gov.in/",
+      "error": "not auto-fetched \u2014 do not invent; paste from MoSPI/DES",
+      "evidence": "unknown",
+      "note": "Source hint: MoSPI / Gujarat DES",
+      "raw": null
     },
     "state_gst": {
-      "name": "Gujarat GST collections (\u20b9 cr or YoY)",
-      "value": null,
-      "unit": "INR cr / %",
-      "as_of": null,
-      "direction": "unknown",
-      "source": "State finance / GSTN releases \u2014 manual",
-      "source_url": null,
-      "error": "not auto-fetched \u2014 enter manually or AI-fill (tagged ai)",
-      "evidence": "unknown"
+      "name": "Gujarat GST collections",
+      "value": 17.0,
+      "display": "\u20b912,222 Cr (September 2026) \u00b7 YoY +17% (vs \u20b910,419 Cr)",
+      "unit": "% YoY",
+      "as_of": "2026-09",
+      "direction": "rising",
+      "source": "GSTN monthly GST revenue report (state-wise growth table)",
+      "source_url": "https://tutorial.gst.gov.in/downloads/news/final_gst_revenue_report_for_publishing_monthly_sep_2026.pdf",
+      "error": null,
+      "evidence": "fact",
+      "note": null,
+      "raw": {
+        "month_total_cr": 12222.0,
+        "prior_year_same_month_cr": 10419.0,
+        "yoy_pct": 17.0,
+        "period": "September 2026"
+      }
     },
     "power_dgvcl": {
       "name": "DGVCL power demand / sales",
       "value": null,
+      "display": null,
       "unit": "MU / %",
       "as_of": null,
       "direction": "unknown",
-      "source": "DGVCL / GUVNL disclosures \u2014 manual",
-      "source_url": null,
-      "error": "not auto-fetched \u2014 enter manually or AI-fill (tagged ai)",
-      "evidence": "unknown"
+      "source": "DGVCL / GUVNL public disclosures",
+      "source_url": "https://www.dgvcl.com/",
+      "error": "URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1029)>; manual paste",
+      "evidence": "unknown",
+      "note": "manual paste",
+      "raw": null
     },
     "power_mgvcl": {
       "name": "MGVCL power demand / sales",
       "value": null,
+      "display": null,
       "unit": "MU / %",
       "as_of": null,
       "direction": "unknown",
-      "source": "MGVCL / GUVNL disclosures \u2014 manual",
-      "source_url": null,
-      "error": "not auto-fetched \u2014 enter manually or AI-fill (tagged ai)",
-      "evidence": "unknown"
+      "source": "MGVCL / GUVNL public disclosures",
+      "source_url": "https://www.mgvcl.com/",
+      "error": "PDF-only / no clean numeric feed",
+      "evidence": "unknown",
+      "note": "manual paste",
+      "raw": null
     },
     "port_mundra": {
       "name": "Mundra port throughput",
-      "value": null,
-      "unit": "MT / %",
-      "as_of": null,
-      "direction": "unknown",
-      "source": "Adani Ports / IPA \u2014 manual",
-      "source_url": null,
-      "error": "not auto-fetched \u2014 enter manually or AI-fill (tagged ai)",
-      "evidence": "unknown"
+      "value": 51.2,
+      "display": "51.2 MMT Q1 FY27 (Apr\u2013Jun 2026) (YoY +7% vs 48.0)",
+      "unit": "MMT",
+      "as_of": "2026-06-30",
+      "direction": "rising",
+      "source": "Adani Ports Q1 FY27 operational highlights (port volume table)",
+      "source_url": "https://www.adaniports.com/-/media/project/ports/investor/investor-downloads/operational-highlights/q1-fy27.pdf",
+      "error": null,
+      "evidence": "fact",
+      "note": null,
+      "raw": {
+        "q_mmt": 51.2,
+        "prior_q_mmt": 48.0,
+        "yoy_pct": 7.0,
+        "period": "Q1 FY27 (Apr\u2013Jun 2026)"
+      }
     },
     "port_hazira": {
       "name": "Hazira port throughput",
-      "value": null,
-      "unit": "MT / %",
-      "as_of": null,
-      "direction": "unknown",
-      "source": "Operator / IPA \u2014 manual",
-      "source_url": null,
-      "error": "not auto-fetched \u2014 enter manually or AI-fill (tagged ai)",
-      "evidence": "unknown"
+      "value": 6.5,
+      "display": "6.5 MMT Q1 FY27 (Apr\u2013Jun 2026) (YoY -6% vs 6.9)",
+      "unit": "MMT",
+      "as_of": "2026-06-30",
+      "direction": "falling",
+      "source": "Adani Ports Q1 FY27 operational highlights (port volume table)",
+      "source_url": "https://www.adaniports.com/-/media/project/ports/investor/investor-downloads/operational-highlights/q1-fy27.pdf",
+      "error": null,
+      "evidence": "fact",
+      "note": null,
+      "raw": {
+        "q_mmt": 6.5,
+        "prior_q_mmt": 6.9,
+        "yoy_pct": -6.0,
+        "period": "Q1 FY27 (Apr\u2013Jun 2026)"
+      }
     },
     "port_kandla": {
       "name": "Kandla (Deendayal) throughput",
       "value": null,
-      "unit": "MT / %",
+      "display": null,
+      "unit": "MMT",
       "as_of": null,
       "direction": "unknown",
-      "source": "DPA / IPA \u2014 manual",
-      "source_url": null,
-      "error": "not auto-fetched \u2014 enter manually or AI-fill (tagged ai)",
-      "evidence": "unknown"
+      "source": "DPA / IPA monthly traffic",
+      "source_url": "https://www.deendayalport.gov.in/",
+      "error": "DPA/IPA HTML shell or SSL fail \u2014 no published monthly tonnes scrapeable",
+      "evidence": "unknown",
+      "note": "manual paste from DPA/IPA bulletin if needed",
+      "raw": null
     },
     "rbi_gujarat_credit": {
-      "name": "RBI Gujarat bank credit growth",
+      "name": "RBI Gujarat bank credit",
       "value": null,
-      "unit": "%",
+      "display": null,
+      "unit": "% YoY",
       "as_of": null,
       "direction": "unknown",
-      "source": "RBI state-level banking stats \u2014 manual",
-      "source_url": null,
-      "error": "not auto-fetched \u2014 enter manually or AI-fill (tagged ai)",
-      "evidence": "unknown"
+      "source": "RBI Handbook of Statistics on Indian States \u2014 Table 156 (SCB credit)",
+      "source_url": "https://rbi.org.in/Scripts/AnnualPublications.aspx?head=Handbook%20of%20Statistics%20on%20Indian%20States",
+      "error": "RemoteDisconnected: Remote end closed connection without response",
+      "evidence": "unknown",
+      "note": "Manual: RBI Handbook Table 156 State-wise Credit by SCBs",
+      "raw": null
     },
     "rainfall_agri": {
-      "name": "Rainfall / agri note",
-      "value": null,
-      "unit": "note",
-      "as_of": null,
-      "direction": "unknown",
-      "source": "IMD / state agri \u2014 qualitative OK",
-      "source_url": null,
-      "error": "not auto-fetched \u2014 enter manually or AI-fill (tagged ai)",
-      "evidence": "unknown"
+      "name": "Rainfall / agri (IMD Gujarat)",
+      "value": 5.0,
+      "display": "Gujarat monthly departure 5% (actual 122.5 mm vs normal 117.1 mm; From 01-09-2026 To 30-09-2026)",
+      "unit": "% departure",
+      "as_of": "2026-09",
+      "direction": "flat",
+      "source": "IMD state-wise rainfall",
+      "source_url": "https://mausam.imd.gov.in/responsive/rainfallinformation_state.php?msg=M",
+      "error": null,
+      "evidence": "fact",
+      "note": null,
+      "raw": {
+        "departure_pct": 5.0,
+        "actual_mm": 122.5,
+        "normal_mm": 117.1,
+        "period": "From 01-09-2026 To 30-09-2026"
+      }
     }
   },
-  "warnings": [],
+  "warnings": [
+    "Ports: Kandla/Deendayal not scrapeable (thin HTML) \u2014 null",
+    "Credit: RemoteDisconnected: Remote end closed connection without response \u2014 null",
+    "Power: GUVNL reachable but no auto numeric extract \u2014 null (manual paste)",
+    "Power: DGVCL URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1029)> \u2014 left null (manual paste)",
+    "Power: MGVCL reachable but no auto numeric extract \u2014 null (manual paste)"
+  ],
   "fetch_notes": [
     "Proxies with prices: 30/30",
-    "Gujarat macros left null for manual/AI \u2014 no free unauth state feed used."
+    "Macros filled (fact): ['state_gst', 'port_mundra', 'port_hazira', 'rainfall_agri']",
+    "Macros still null: ['gsdp_yoy', 'iip_gujarat', 'power_dgvcl', 'power_mgvcl', 'port_kandla', 'rbi_gujarat_credit']",
+    "WARN: Ports: Kandla/Deendayal not scrapeable (thin HTML) \u2014 null",
+    "WARN: Credit: RemoteDisconnected: Remote end closed connection without response \u2014 null",
+    "WARN: Power: GUVNL reachable but no auto numeric extract \u2014 null (manual paste)",
+    "WARN: Power: DGVCL URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1029)> \u2014 left null (manual paste)",
+    "WARN: Power: MGVCL reachable but no auto numeric extract \u2014 null (manual paste)"
   ]
 }

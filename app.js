@@ -235,18 +235,36 @@
     var snapM = snapshot.macros || {};
     root.innerHTML = MACRO_KEYS.map(function (row) {
       var k = row[0], label = row[1], hint = row[2];
+      var snap = snapM[k] || {};
       var seed = macros[k];
-      if (seed == null && snapM[k] && snapM[k].value != null) seed = snapM[k].value;
-      var dir = macros[k + "_dir"] || "unknown";
+      if (seed == null || seed === "") {
+        if (snap.display != null) seed = snap.display;
+        else if (snap.value != null) seed = snap.value;
+      }
+      var dir = macros[k + "_dir"] || snap.direction || "unknown";
+      var ev = (macros._ev && macros._ev[k]) || snap.evidence || "unknown";
+      var metaBits = [];
+      if (snap.source) metaBits.push("source: " + snap.source);
+      if (snap.as_of) metaBits.push("as_of: " + snap.as_of);
+      if (snap.source_url) metaBits.push('<a href="' + escapeHtml(snap.source_url) + '" target="_blank" rel="noopener" style="color:#93c5fd">link</a>');
+      if (snap.note) metaBits.push(snap.note);
+      if (snap.error && snap.value == null) metaBits.push("null: " + snap.error);
+      metaBits.push("evidence: " + ev);
       return '<label class="field">' + escapeHtml(label) +
-        '<span class="formula">input · ' + escapeHtml(hint) + "</span>" +
+        '<span class="formula">input · ' + escapeHtml(hint) + " · manual override kept</span>" +
         '<input class="blue" data-macro="' + k + '" value="' + escapeHtml(seed == null ? "" : seed) + '"/>' +
         '<span class="formula">direction</span>' + dirSelect("macro-dir-" + k, dir) +
+        '<span class="formula" style="display:block;margin-top:4px">' + metaBits.join(" · ") + "</span>" +
         "</label>";
     }).join("");
+    var warns = (snapshot.warnings || []).slice();
+    var notes = (snapshot.fetch_notes || []).filter(function (n) {
+      return n.indexOf("Macros") === 0 || n.indexOf("WARN:") === 0;
+    });
     document.getElementById("macro-warnings").innerHTML =
-      (snapshot.warnings || []).map(function (w) { return "⚠ " + escapeHtml(w); }).join("<br/>") ||
-      "No fetch warnings.";
+      (warns.map(function (w) { return "⚠ " + escapeHtml(w); }).concat(
+        notes.map(function (n) { return escapeHtml(n); })
+      ).join("<br/>")) || "No fetch warnings.";
   }
 
   document.getElementById("btn-save-macros").onclick = function () {
@@ -267,20 +285,34 @@
     var st = document.getElementById("macros-status");
     st.className = "status loading"; st.textContent = "Calling DeepSeek…";
     try {
+      var snapMacros = snapshot.macros || {};
       var data = await callDeepSeek([
-        { role: "system", content: "Gujarat macro assistant for credit field work. JSON object with keys gsdp_yoy,iip_gujarat,state_gst,power_dgvcl,power_mgvcl,port_mundra,port_hazira,port_kandla,rbi_gujarat_credit,rainfall_agri and optional *_dir (rising|falling|flat|unknown) plus warnings[]. CRITICAL: never invent numbers - if unknown leave null and warn. Values may be strings for qualitative notes." },
-        { role: "user", content: "Fill latest Gujarat state macros if you have public knowledge. Snapshot market: " + JSON.stringify(snapshot.market || {}).slice(0, 2500) + " Existing: " + JSON.stringify(macros).slice(0, 1500) },
+        { role: "system", content: "Gujarat macro assistant for credit field work. JSON object with keys gsdp_yoy,iip_gujarat,state_gst,power_dgvcl,power_mgvcl,port_mundra,port_hazira,port_kandla,rbi_gujarat_credit,rainfall_agri and optional *_dir (rising|falling|flat|unknown) plus warnings[]. CRITICAL: never invent numbers. If snapshot.macros[key].evidence==='fact' and value/display present, COPY that into the output and do not replace with guesses. Only fill null/unknown keys if you have a real public figure; else leave null and warn. Values may be strings for qualitative notes." },
+        { role: "user", content: "Use snapshot macros when present (fact). Snapshot macros: " + JSON.stringify(snapMacros).slice(0, 4500) + " Market: " + JSON.stringify(snapshot.market || {}).slice(0, 1200) + " Manual overrides: " + JSON.stringify(macros).slice(0, 1200) },
       ]);
       macros._ev = macros._ev || {};
       MACRO_KEYS.forEach(function (row) {
         var k = row[0];
+        var snap = snapMacros[k] || {};
         if (data[k] != null && data[k] !== "") {
-          macros[k] = data[k];
-          macros._ev[k] = "ai";
+          // If snapshot already has fact, tag as fact when AI echoes it; else ai
+          if (snap.evidence === "fact" && snap.value != null) {
+            macros[k] = data[k];
+            macros._ev[k] = "fact";
+          } else {
+            macros[k] = data[k];
+            macros._ev[k] = "ai";
+          }
+        } else if (snap.evidence === "fact" && (snap.display != null || snap.value != null)) {
+          macros[k] = snap.display != null ? snap.display : snap.value;
+          macros._ev[k] = "fact";
         }
         if (data[k + "_dir"]) {
           macros[k + "_dir"] = data[k + "_dir"];
-          macros._ev[k + "_dir"] = "ai";
+          macros._ev[k + "_dir"] = (snap.evidence === "fact" ? "fact" : "ai");
+        } else if (snap.direction && snap.direction !== "unknown") {
+          macros[k + "_dir"] = snap.direction;
+          macros._ev[k + "_dir"] = snap.evidence || "fact";
         }
       });
       saveMacros();

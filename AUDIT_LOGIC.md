@@ -15,7 +15,7 @@ Credit **field aid** for Gujarat industry health-check. Listed equities are **in
 | Layer | Auto | Manual / AI |
 |-------|------|-------------|
 | Proxy price, 1d/1m direction | Yahoo → `data/snapshot.json` | — |
-| Gujarat macros (GSDP, GST, power, ports, credit, agri) | None trusted free feed | Manual or DeepSeek (tagged ai); null if unknown |
+| Gujarat macros (GSDP, GST, power, ports, credit, agri) | Auto when scrapeable: GSTN monthly/xlsx, Adani IR ports, IMD rainfall; RBI/power/GSDP often null | Manual override kept; DeepSeek must use snapshot fact macros; null if unknown |
 | Cluster dials (Demand, Cost, WC, Policy) | Majority score from user/AI dirs | User or AI |
 | Proxy fundies (rev, EBITDA, debt/EBITDA, days) | — | Manual / AI from latest results |
 | Health gates 1–5 | UI STOP/PROCEED rules | Judgment |
@@ -56,3 +56,18 @@ If cluster health Strong/Weak but ≥50% of proxies with known 1m direction disa
 ## DeepSeek
 
 `api.deepseek.com` only. Key in `localStorage`. Must not invent null macros/fundies — leave null + warn.
+
+
+## Macro auto-fetch (v1 wire)
+
+| Key | Auto source | On failure |
+|-----|-------------|------------|
+| state_gst | GSTN monthly revenue PDF / statewise_GST_collection xlsx | null + warning |
+| port_mundra / port_hazira | Adani Ports quarterly ops PDF (MMT) | null + warning |
+| port_kandla | DPA/IPA | null (JS/SSL) |
+| rainfall_agri | IMD state rainfall `msg=M` departure % | null + warning |
+| rbi_gujarat_credit | RBI Handbook T156 xlsx | null if rbidocs gated |
+| power_dgvcl / power_mgvcl | GUVNL family | null + note `manual paste` |
+| gsdp_yoy / iip_gujarat | — | null + MoSPI/PRS hint; never invent |
+
+Evidence tags: `fact` (scraped), `manual`, `ai`, `unknown`.
