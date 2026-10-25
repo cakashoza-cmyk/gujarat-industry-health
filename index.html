@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Gujarat Industry Health Check</title>
+<meta name="description" content="Credit field aid — Gujarat cluster dials + listed proxies. Not investment advice."/>
+<style>
+:root{--bg:#0b1220;--card:#121a2b;--ink:#e8eefc;--muted:#9aa8c7;--line:#243049;--blue:#3b82f6;--blue-bg:#1e3a5f;--go:#16a34a;--go-bg:#052e16;--stop:#ef4444;--stop-bg:#450a0a;--warn:#f59e0b}
+*{box-sizing:border-box}body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.45}
+header{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+header h1{font-size:1.05rem;margin:0;font-weight:650}.sub{color:var(--muted);font-size:.78rem;margin:2px 0 0}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}.tab{background:#0f172a;border:1px solid var(--line);color:var(--ink);padding:7px 12px;border-radius:999px;cursor:pointer;font-size:.85rem}.tab.active{background:var(--blue);border-color:var(--blue)}
+main{max-width:1040px;margin:0 auto;padding:14px 14px 80px}
+.banner{background:#1a1030;border:1px solid #4c1d95;color:#ddd6fe;padding:10px 12px;border-radius:10px;font-size:.82rem;margin-bottom:12px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+.panel h2{margin:0 0 8px;font-size:1rem}.panel h3{margin:12px 0 6px;font-size:.9rem}
+.muted{color:var(--muted);font-size:.8rem}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+label.field{display:flex;flex-direction:column;gap:4px;font-size:.75rem;color:var(--muted);min-width:130px;flex:1}
+label.field .formula{color:#93c5fd;font-size:.68rem}
+input,select,textarea{background:#0f172a;border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:8px 10px;font:inherit}
+input.blue,textarea.blue,select.blue{border-color:var(--blue);background:var(--blue-bg)}
+textarea{min-height:64px;width:100%;resize:vertical}
+button{border:1px solid var(--line);background:#1e293b;color:var(--ink);border-radius:8px;padding:9px 14px;cursor:pointer;font:inherit;font-size:.85rem}
+button:disabled{opacity:.45;cursor:not-allowed}button.primary{background:var(--blue);border-color:var(--blue)}
+button.go{background:var(--go);border-color:var(--go);color:#fff;font-weight:650}
+button.stop{background:var(--stop);border-color:var(--stop);color:#fff;font-weight:650}
+button.ghost{background:transparent}
+.dial{flex:1;min-width:120px;background:#0f172a;border:1px solid var(--line);border-radius:10px;padding:10px}
+.dial .name{font-size:.72rem;color:var(--muted)}.dial .score{font-size:1.05rem;font-weight:700;margin-top:4px}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.72rem;border:1px solid var(--line)}
+.pill.strong{background:var(--go-bg);color:#bbf7d0;border-color:var(--go)}
+.pill.weak{background:var(--stop-bg);color:#fecaca;border-color:var(--stop)}
+.pill.mixed{background:#422006;color:#fde68a;border-color:var(--warn)}
+.pill.unclear{background:#1e293b;color:var(--muted)}
+.verdict{padding:14px;border-radius:12px;margin-top:12px;font-weight:650;text-align:center}
+.verdict.stop{background:var(--stop-bg);border:2px solid var(--stop);color:#fecaca}
+.verdict.go{background:var(--go-bg);border:2px solid var(--go);color:#bbf7d0}
+.gate-nav{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.gate-pill{padding:6px 10px;border-radius:999px;border:1px solid var(--line);font-size:.72rem;color:var(--muted)}
+.gate-pill.current{border-color:var(--blue);color:#fff;background:var(--blue-bg)}
+.gate-pill.done{border-color:var(--go);color:#bbf7d0}
+.gate-pill.stopped{border-color:var(--stop);color:#fecaca}
+table{width:100%;border-collapse:collapse;font-size:.78rem;margin-top:8px}
+th,td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}th{background:#0f172a;color:var(--muted)}
+.ai-tag{display:inline-block;background:#2e1065;color:#c4b5fd;border-radius:6px;padding:1px 6px;font-size:.68rem;margin-left:4px}
+.hidden{display:none!important}.status{font-size:.8rem;margin-top:6px}.status.ok{color:#86efac}.status.err{color:#fca5a5}.status.loading{color:#fde68a}
+.footer-note{color:var(--muted);font-size:.72rem;margin-top:16px}
+.check{display:flex;gap:8px;align-items:flex-start;margin:6px 0;font-size:.85rem}
+@media(max-width:600px){label.field{min-width:100%}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Gujarat Industry Health Check</h1>
+    <div class="sub">Credit field aid · South Gujarat clusters · proxies ≠ buy list · STOP is valid</div>
+  </div>
+  <div class="tabs" id="tabs">
+    <button type="button" class="tab active" data-tab="ops">Health gates</button>
+    <button type="button" class="tab" data-tab="board">Cluster board</button>
+    <button type="button" class="tab" data-tab="macros">Gujarat macros</button>
+    <button type="button" class="tab" data-tab="settings">Settings</button>
+  </div>
+</header>
+<main>
+  <div class="banner"><strong>Disclaimer:</strong> Not investment advice. Listed names are industry <em>proxies for credit health-check</em>, not a buy list. Not an HDFC loan-advisory product. AI outputs tagged <span class="ai-tag">AI</span> — verify filings / state releases.</div>
+
+  <section id="view-settings" class="hidden">
+    <div class="panel">
+      <h2>DeepSeek API</h2>
+      <p class="muted">Key in localStorage only. Provider: api.deepseek.com — never Gemini/OpenRouter.</p>
+      <div class="row">
+        <label class="field">API key<input id="ai-key" class="blue" type="password" autocomplete="off" placeholder="sk-…"/></label>
+        <label class="field">Model
+          <select id="ai-model" class="blue">
+            <option value="deepseek-chat">deepseek-chat</option>
+            <option value="deepseek-reasoner">deepseek-reasoner</option>
+          </select>
+        </label>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button type="button" class="primary" id="btn-save-ai">Save key locally</button>
+        <button type="button" class="ghost" id="btn-clear-ai">Clear key</button>
+      </div>
+      <div class="status" id="ai-settings-status"></div>
+    </div>
+    <div class="panel">
+      <h2>Docs</h2>
+      <p class="muted"><a href="./AUDIT_LOGIC.md" style="color:#93c5fd">AUDIT_LOGIC.md</a> · <a href="./README.md" style="color:#93c5fd">README.md</a></p>
+    </div>
+  </section>
+
+  <section id="view-macros" class="hidden">
+    <div class="panel">
+      <h2>Gujarat macros</h2>
+      <p class="muted">Blue = inputs. Black-label formulas = scored/derived. Null if unknown — never invent.</p>
+      <div id="macros-form" class="row"></div>
+      <div class="row" style="margin-top:10px">
+        <button type="button" class="primary" id="btn-ai-macros">Fill macros with AI <span class="ai-tag">AI</span></button>
+        <button type="button" class="ghost" id="btn-save-macros">Save</button>
+      </div>
+      <div class="status" id="macros-status"></div>
+      <div id="macro-warnings" class="muted" style="margin-top:8px"></div>
+    </div>
+  </section>
+
+  <section id="view-board" class="hidden">
+    <div class="panel">
+      <h2>Cluster board</h2>
+      <label class="field" style="max-width:320px">Active cluster
+        <select id="cluster-select" class="blue"></select>
+      </label>
+      <div id="cluster-health" style="margin-top:10px"></div>
+      <h3>Dials <span class="muted">(inputs blue · health score derived)</span></h3>
+      <div id="dials-form"></div>
+      <div class="row" style="margin-top:8px">
+        <button type="button" class="primary" id="btn-ai-dials">Suggest dials <span class="ai-tag">AI</span></button>
+        <button type="button" class="ghost" id="btn-save-dials">Save dials</button>
+      </div>
+      <div class="status" id="dials-status"></div>
+      <h3>Listed proxies <span class="muted">(credit context — not a buy list)</span></h3>
+      <div id="proxies-table"></div>
+      <div class="row" style="margin-top:8px">
+        <button type="button" class="primary" id="btn-ai-proxies">Proxy commentary <span class="ai-tag">AI</span></button>
+      </div>
+      <div class="status" id="proxies-status"></div>
+      <div id="divergence-box" style="margin-top:10px"></div>
+    </div>
+  </section>
+
+  <section id="view-ops">
+    <div class="panel">
+      <h2>Health gates</h2>
+      <p class="muted">Simplified rejection machine. Stop at first no.</p>
+      <div class="gate-nav" id="gate-nav"></div>
+      <div id="gate-root"></div>
+      <div class="row" style="margin-top:8px">
+        <button type="button" class="ghost" id="btn-reset-gates">Reset gates</button>
+      </div>
+    </div>
+  </section>
+
+  <p class="footer-note">Snapshot: <code>data/snapshot.json</code> · DeepSeek-assisted only · Unclear allowed · Owner: Akash Oza (Surat credit field context)</p>
+</main>
+<script src="./app.js"></script>
+</body>
+</html>
