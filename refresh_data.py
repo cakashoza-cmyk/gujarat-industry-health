@@ -51,6 +51,52 @@ MARKET = {
     "inr_usd": "INR=X",
     "brent": "BZ=F",
     "india_vix": "^INDIAVIX",
+    "gold": "GC=F",
+    "natgas": "NG=F",
+    "cotton": "CT=F",
+    "nifty_auto": "^CNXAUTO",
+}
+
+# Cluster → leading indicator keys (from market/macros) → dial they inform.
+# PSF/polyester yarn: no clean Yahoo series — UI shows null + manual hint.
+INDICATOR_MAP = {
+    "surat_textiles_weaving": [
+        {"key": "cotton", "label": "Cotton futures (CT=F)", "dial": "cost",
+         "note": "US cotton proxy — Indian yarn/PSF paste manually if known"},
+        {"key": "brent", "label": "Brent (fuel/poly cost proxy)", "dial": "cost", "note": None},
+        {"key": "inr_usd", "label": "USDINR", "dial": "cost", "note": "INR weak can lift export enquiry"},
+    ],
+    "surat_textiles_processing": [
+        {"key": "brent", "label": "Brent (process fuel/chem cost)", "dial": "cost", "note": None},
+        {"key": "inr_usd", "label": "USDINR", "dial": "cost", "note": None},
+        {"key": "cotton", "label": "Cotton futures", "dial": "cost", "note": "Indirect; PSF/POY manual"},
+    ],
+    "morbi_ceramics": [
+        {"key": "natgas", "label": "Natural gas (NG=F)", "dial": "cost", "note": "Kiln fuel proxy"},
+        {"key": "brent", "label": "Brent", "dial": "cost", "note": "Fuel cost co-move"},
+        {"key": "inr_usd", "label": "USDINR", "dial": "cost", "note": "Import/export mix"},
+    ],
+    "vapi_ankleshwar_chemicals": [
+        {"key": "brent", "label": "Brent / naphtha proxy", "dial": "cost", "note": "Feedstock stand-in"},
+        {"key": "inr_usd", "label": "USDINR", "dial": "cost", "note": None},
+    ],
+    "diamonds_jewellery": [
+        {"key": "inr_usd", "label": "USDINR", "dial": "demand", "note": "INR weak often helps polished exports"},
+        {"key": "gold", "label": "Gold futures (GC=F)", "dial": "demand", "note": "Jewellery demand / inventory cost"},
+    ],
+    "auto_ancillary": [
+        {"key": "nifty_auto", "label": "Nifty Auto", "dial": "demand", "note": None},
+        {"key": "inr_usd", "label": "USDINR", "dial": "cost", "note": None},
+    ],
+    "ports_logistics": [
+        {"key": "macro:port_mundra", "label": "Mundra throughput", "dial": "demand", "note": "From macros"},
+        {"key": "macro:port_hazira", "label": "Hazira throughput", "dial": "demand", "note": "From macros"},
+        {"key": "brent", "label": "Brent (freight/bunker co-move)", "dial": "cost", "note": None},
+    ],
+    "renewables": [
+        {"key": "inr_usd", "label": "USDINR (module import)", "dial": "cost",
+         "note": "Mostly manual — policy/tariff field notes"},
+    ],
 }
 
 GST_STATS = "https://www.gst.gov.in/download/gststatistics"
@@ -835,9 +881,10 @@ def empty_gsdp_iip() -> dict[str, dict]:
 def main() -> int:
     warnings: list[str] = []
     market = {}
+    one_mo = {"inr_usd", "india_vix", "gold", "natgas", "cotton", "nifty_auto", "brent"}
     for k, sym in MARKET.items():
         print(f"market {k} ({sym})...", flush=True)
-        market[k] = yahoo_chart(sym, "1mo" if k in ("inr_usd", "india_vix") else "5d")
+        market[k] = yahoo_chart(sym, "1mo" if k in one_mo else "5d")
         if market[k].get("value") is None:
             warnings.append(f"{k}: {market[k].get('error')}")
 
@@ -882,12 +929,21 @@ def main() -> int:
             "loan-advisory product. Failed fetches are null with warnings — never invented."
         ),
         "market": market,
+        "leading": {k: market[k] for k in (
+            "brent", "inr_usd", "gold", "natgas", "cotton", "nifty_auto", "nifty", "india_vix"
+        ) if k in market},
+        "indicator_map": INDICATOR_MAP,
         "proxies": proxies,
         "proxy_map": PROXIES,
+        "listed_pulse_note": (
+            "Listed NSE names are an optional secondary pulse (price/1m only). "
+            "Not for credit decision. Do not invent company fundamentals."
+        ),
         "macros": macros,
         "warnings": warnings,
         "fetch_notes": [
-            f"Proxies with prices: {sum(1 for v in proxies.values() if v.get('value') is not None)}/{len(proxies)}",
+            f"Leading Yahoo series filled: {sum(1 for k in ('brent','inr_usd','gold','natgas','cotton','nifty_auto') if (market.get(k) or {}).get('value') is not None)}/6",
+            f"Listed pulse prices: {sum(1 for v in proxies.values() if v.get('value') is not None)}/{len(proxies)} (secondary only)",
             f"Macros filled (fact): {filled}",
             f"Macros still null: {nulls}",
         ],

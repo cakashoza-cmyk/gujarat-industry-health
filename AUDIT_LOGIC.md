@@ -1,73 +1,67 @@
-# Gujarat Industry Health — Audit Logic (v1 scaffold)
+# Gujarat Industry Health — Audit Logic (v2 credit rebuild)
 
 | Field | Value |
 |-------|-------|
 | **Live** | https://cakashoza-cmyk.github.io/gujarat-industry-health/ |
 | **As of** | 2026-10-26 Asia/Calcutta |
-| **Owner** | Akash Oza (Surat; credit field context) |
+| **Owner** | Akash Oza (HDFC South Gujarat credit field) |
 
 ## Disclaimer
 
-Credit **field aid** for Gujarat industry health-check. Listed equities are **industry proxies for credit context**, not a buy list. Not investment advice. **Not an HDFC loan-advisory product.** Unclear / STOP preferred over forced labels. AI fills are tagged `ai` — verify primary sources.
+Credit **field aid** for Gujarat SME/mid-corporate health-check. **Not investment advice. Not an HDFC loan-advisory product.** Listed NSE names are an optional **Listed pulse** (price/1m only) and are **not for credit decision**. Prefer Unclear / STOP over invented numbers. DeepSeek is optional.
 
-## Implemented vs manual
+## Layers (priority order)
 
-| Layer | Auto | Manual / AI |
-|-------|------|-------------|
-| Proxy price, 1d/1m direction | Yahoo → `data/snapshot.json` | — |
-| Gujarat macros (GSDP, GST, power, ports, credit, agri) | Auto when scrapeable: GSTN monthly/xlsx, Adani IR ports, IMD rainfall; RBI/power/GSDP often null | Manual override kept; DeepSeek must use snapshot fact macros; null if unknown |
-| Cluster dials (Demand, Cost, WC, Policy) | Majority score from user/AI dirs | User or AI |
-| Proxy fundies (rev, EBITDA, debt/EBITDA, days) | — | Manual / AI from latest results |
-| Health gates 1–5 | UI STOP/PROCEED rules | Judgment |
+| Priority | Layer | Role |
+|----------|-------|------|
+| 1 | **Cluster dials** (Demand / Cost / WC / Policy) | Credit officer judgment |
+| 1 | **Field notes** (per cluster, localStorage) | Site visit / borrower feedback — what you actually have |
+| 1 | **Leading indicators** | Yahoo/public scrapes mapped → dial; null never invent |
+| 1 | **Gujarat macros** | GST, ports, rainfall, etc. when scrapeable |
+| 2 | **Listed pulse** | Optional price/1m secondary check — collapsed in UI; no fundie blanks |
 
-## Cluster health score
+## Leading indicators → dial map
 
-Each dial direction ∈ {rising, flat, falling, unknown}. Ignore unknown/flat for majority:
+| Cluster | Indicators | Dial |
+|---------|------------|------|
+| Surat textiles weave/process | Cotton (CT=F), Brent, USDINR; PSF/POY = manual in field notes | Cost (mostly) |
+| Morbi ceramics | Natgas (NG=F), Brent, USDINR | Cost |
+| Vapi–Ankleshwar chemicals | Brent (naphtha proxy), USDINR | Cost |
+| Diamonds / jewellery | USDINR, Gold (GC=F) | Demand |
+| Auto / ancillary | Nifty Auto (^CNXAUTO), USDINR | Demand / Cost |
+| Ports / logistics | Mundra + Hazira macros, Brent | Demand / Cost |
+| Renewables | USDINR only; mostly field notes | Cost |
 
-- ≥60% rising among known → dial Rising
-- ≥60% falling → Falling
-- else Unclear / Flat
+## Health score
 
-Cluster health from four dials (Demand, Cost inverted for “health”, WC stress inverted, Policy/export):
+Weighted blend (listed pulse **excluded**):
 
-- Cost Rising = negative for health; WC stress Rising = negative.
-- Strong: ≥3 healthy signals, 0 conflicting weak
-- Weak: ≥3 unhealthy
-- Mixed: split
-- Unclear: insufficient known dials
+- Each known dial signal ×2 (Cost & WC inverted: rising = unhealthy)
+- Each known leading-indicator signal ×1 (same invert rules via mapped dial)
+- Strong if score/weight ≥ 0.45; Weak if ≤ −0.45; else Mixed; Unclear if weight &lt; 2
 
-## Divergence flag
+Field notes do not numeric-score; they feed Gate 2/4 narrative and show on scorecards.
 
-If cluster health Strong/Weak but ≥50% of proxies with known 1m direction disagree (Strong but proxies falling, or Weak but proxies rising) → **divergence** → Gate 5 can STOP.
+## Divergence STOP
 
-## Proxy rationale (why these names)
+**Primary:** leading indicators conflict with set dials on the same dial (≥50% of related indicators disagree) → Gate 5 STOP.
 
-| Cluster | Tickers | Why (credit proxy, not buy list) |
-|---------|---------|----------------------------------|
-| Surat textiles weaving | TRIDENT, ARVIND, KPRMILL, FILATEX | Liquid textile/filament names; FILATEX/ARVIND closer to yarn-fabric cycle Surat feels; no perfect pure-Surat liquid weave pure-play |
-| Surat textiles processing | WELSPUNLIV, HIMATSEIDE, GOKEX, RAYMOND | Home-textile / processing / garment exporters as demand-cost proxies for process chain |
-| Morbi ceramics | CERA, KAJARIACER, SOMANYCERA, ORIENTBELL | Liquid domestic tile/sanitary names standing in for Morbi cluster cycle |
-| Vapi–Ankleshwar chemicals | DEEPAKNTR, AARTIIND, GUJALKALI, ATUL | Gujarat chemical specialty/commodity liquid names |
-| Diamonds / jewellery | TITAN, KALYANKJIL, SENCO | Liquid jewellery retail as demand proxy; diamond manufacturing lacks clean liquid pure-plays — labeled as such |
-| Auto / ancillary | MOTHERSON, BHARATFORG, ENDURANCE | Liquid auto-ancillary cycle proxies (Gujarat has auto footprint; not Surat-only) |
-| Ports / logistics | ADANIPORTS, GPPL, JSWINFRA, GESHIP | Mundra/Pipavav/infra + shipping as Gujarat trade throughput proxies |
-| Renewables | SUZLON, INOXWIND, WAAREEENER, KPIGREEN | Liquid wind/solar/module/IPP names; avoid illiquid / stressed microcaps |
+**Secondary (soft only):** listed pulse 1m disagrees with Strong/Weak — shown as note, not auto credit STOP.
+
+## Macro auto-fetch
+
+| Key | Auto | On failure |
+|-----|------|------------|
+| state_gst | GSTN monthly PDF | null + warning |
+| port_mundra / port_hazira | Adani IR PDF | null |
+| port_kandla | — | null (DPA/IPA) |
+| rainfall_agri | IMD monthly departure | null |
+| rbi_gujarat_credit | RBI Handbook T156 | null if gated |
+| power_* | — | null + `manual paste` |
+| gsdp_yoy / iip_gujarat | — | null + MoSPI/PRS hint |
+
+Evidence: `fact` | `manual` | `ai` | `unknown`.
 
 ## DeepSeek
 
-`api.deepseek.com` only. Key in `localStorage`. Must not invent null macros/fundies — leave null + warn.
-
-
-## Macro auto-fetch (v1 wire)
-
-| Key | Auto source | On failure |
-|-----|-------------|------------|
-| state_gst | GSTN monthly revenue PDF / statewise_GST_collection xlsx | null + warning |
-| port_mundra / port_hazira | Adani Ports quarterly ops PDF (MMT) | null + warning |
-| port_kandla | DPA/IPA | null (JS/SSL) |
-| rainfall_agri | IMD state rainfall `msg=M` departure % | null + warning |
-| rbi_gujarat_credit | RBI Handbook T156 xlsx | null if rbidocs gated |
-| power_dgvcl / power_mgvcl | GUVNL family | null + note `manual paste` |
-| gsdp_yoy / iip_gujarat | — | null + MoSPI/PRS hint; never invent |
-
-Evidence tags: `fact` (scraped), `manual`, `ai`, `unknown`.
+Optional. `api.deepseek.com` only. Must copy snapshot `fact` macros; must **not** invent company fundamentals or fill empty fundie grids (removed).

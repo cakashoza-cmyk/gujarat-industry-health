@@ -1,6 +1,6 @@
 {
-  "generated_at_utc": "2026-10-25T20:43:37.604686+00:00",
-  "generated_at_ist": "2026-10-26 02:13:37 Asia/Calcutta",
+  "generated_at_utc": "2026-10-26T03:34:08.533858+00:00",
+  "generated_at_ist": "2026-10-26 09:04:08 Asia/Calcutta",
   "disclaimer": "Credit field aid for Gujarat industry health-check. Listed names are industry PROXIES, not a buy list. Not investment advice. Not an HDFC loan-advisory product. Failed fetches are null with warnings \u2014 never invented.",
   "market": {
     "nifty": {
@@ -18,12 +18,12 @@
     },
     "inr_usd": {
       "symbol": "INR=X",
-      "value": 94.93000030517578,
+      "value": 94.94999694824219,
       "prior": 94.7113037109375,
       "as_of": "2026-10-26",
       "direction_1d": "rising",
       "direction_1m": "flat",
-      "change_1m_pct": -0.794,
+      "change_1m_pct": -0.875,
       "source": "Yahoo Finance chart API",
       "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/INR%3DX?range=1mo&interval=1d",
       "error": null,
@@ -31,14 +31,172 @@
     },
     "brent": {
       "symbol": "BZ=F",
-      "value": 111.69999694824219,
-      "prior": 113.16999816894531,
-      "as_of": "2026-10-23",
+      "value": 109.44000244140625,
+      "prior": 116.72000122070312,
+      "as_of": "2026-10-26",
       "direction_1d": "falling",
       "direction_1m": "rising",
-      "change_1m_pct": 2.675,
+      "change_1m_pct": 4.908,
       "source": "Yahoo Finance chart API",
-      "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/BZ%3DF?range=5d&interval=1d",
+      "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/BZ%3DF?range=1mo&interval=1d",
+      "error": null,
+      "evidence": "fact"
+    },
+    "india_vix": {
+      "symbol": "^INDIAVIX",
+      "value": 16.860000610351562,
+      "prior": 15.760000228881836,
+      "as_of": "2026-10-23",
+      "direction_1d": "rising",
+      "direction_1m": "rising",
+      "change_1m_pct": 62.899,
+      "source": "Yahoo Finance chart API",
+      "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/%5EINDIAVIX?range=1mo&interval=1d",
+      "error": null,
+      "evidence": "fact"
+    },
+    "gold": {
+      "symbol": "GC=F",
+      "value": 4029.10009765625,
+      "prior": 4007.89990234375,
+      "as_of": "2026-10-26",
+      "direction_1d": "rising",
+      "direction_1m": "falling",
+      "change_1m_pct": -6.76,
+      "source": "Yahoo Finance chart API",
+      "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/GC%3DF?range=1mo&interval=1d",
+      "error": null,
+      "evidence": "fact"
+    },
+    "natgas": {
+      "symbol": "NG=F",
+      "value": 2.996999979019165,
+      "prior": 2.640000104904175,
+      "as_of": "2026-10-26",
+      "direction_1d": "rising",
+      "direction_1m": "falling",
+      "change_1m_pct": -6.227,
+      "source": "Yahoo Finance chart API",
+      "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/NG%3DF?range=1mo&interval=1d",
+      "error": null,
+      "evidence": "fact"
+    },
+    "cotton": {
+      "symbol": "CT=F",
+      "value": 80.19999694824219,
+      "prior": 80.79000091552734,
+      "as_of": "2026-10-25",
+      "direction_1d": "falling",
+      "direction_1m": "flat",
+      "change_1m_pct": 1.635,
+      "source": "Yahoo Finance chart API",
+      "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/CT%3DF?range=1mo&interval=1d",
+      "error": null,
+      "evidence": "fact"
+    },
+    "nifty_auto": {
+      "symbol": "^CNXAUTO",
+      "value": 24862.30078125,
+      "prior": 25011.5,
+      "as_of": "2026-10-23",
+      "direction_1d": "falling",
+      "direction_1m": "falling",
+      "change_1m_pct": -8.452,
+      "source": "Yahoo Finance chart API",
+      "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/%5ECNXAUTO?range=1mo&interval=1d",
+      "error": null,
+      "evidence": "fact"
+    }
+  },
+  "leading": {
+    "brent": {
+      "symbol": "BZ=F",
+      "value": 109.44000244140625,
+      "prior": 116.72000122070312,
+      "as_of": "2026-10-26",
+      "direction_1d": "falling",
+      "direction_1m": "rising",
+      "change_1m_pct": 4.908,
+      "source": "Yahoo Finance chart API",
+      "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/BZ%3DF?range=1mo&interval=1d",
+      "error": null,
+      "evidence": "fact"
+    },
+    "inr_usd": {
+      "symbol": "INR=X",
+      "value": 94.94999694824219,
+      "prior": 94.7113037109375,
+      "as_of": "2026-10-26",
+      "direction_1d": "rising",
+      "direction_1m": "flat",
+      "change_1m_pct": -0.875,
+      "source": "Yahoo Finance chart API",
+      "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/INR%3DX?range=1mo&interval=1d",
+      "error": null,
+      "evidence": "fact"
+    },
+    "gold": {
+      "symbol": "GC=F",
+      "value": 4029.10009765625,
+      "prior": 4007.89990234375,
+      "as_of": "2026-10-26",
+      "direction_1d": "rising",
+      "direction_1m": "falling",
+      "change_1m_pct": -6.76,
+      "source": "Yahoo Finance chart API",
+      "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/GC%3DF?range=1mo&interval=1d",
+      "error": null,
+      "evidence": "fact"
+    },
+    "natgas": {
+      "symbol": "NG=F",
+      "value": 2.996999979019165,
+      "prior": 2.640000104904175,
+      "as_of": "2026-10-26",
+      "direction_1d": "rising",
+      "direction_1m": "falling",
+      "change_1m_pct": -6.227,
+      "source": "Yahoo Finance chart API",
+      "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/NG%3DF?range=1mo&interval=1d",
+      "error": null,
+      "evidence": "fact"
+    },
+    "cotton": {
+      "symbol": "CT=F",
+      "value": 80.19999694824219,
+      "prior": 80.79000091552734,
+      "as_of": "2026-10-25",
+      "direction_1d": "falling",
+      "direction_1m": "flat",
+      "change_1m_pct": 1.635,
+      "source": "Yahoo Finance chart API",
+      "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/CT%3DF?range=1mo&interval=1d",
+      "error": null,
+      "evidence": "fact"
+    },
+    "nifty_auto": {
+      "symbol": "^CNXAUTO",
+      "value": 24862.30078125,
+      "prior": 25011.5,
+      "as_of": "2026-10-23",
+      "direction_1d": "falling",
+      "direction_1m": "falling",
+      "change_1m_pct": -8.452,
+      "source": "Yahoo Finance chart API",
+      "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/%5ECNXAUTO?range=1mo&interval=1d",
+      "error": null,
+      "evidence": "fact"
+    },
+    "nifty": {
+      "symbol": "^NSEI",
+      "value": 22600.0,
+      "prior": 22687.650390625,
+      "as_of": "2026-10-23",
+      "direction_1d": "falling",
+      "direction_1m": "falling",
+      "change_1m_pct": -2.36,
+      "source": "Yahoo Finance chart API",
+      "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/%5ENSEI?range=5d&interval=1d",
       "error": null,
       "evidence": "fact"
     },
@@ -55,6 +213,138 @@
       "error": null,
       "evidence": "fact"
     }
+  },
+  "indicator_map": {
+    "surat_textiles_weaving": [
+      {
+        "key": "cotton",
+        "label": "Cotton futures (CT=F)",
+        "dial": "cost",
+        "note": "US cotton proxy \u2014 Indian yarn/PSF paste manually if known"
+      },
+      {
+        "key": "brent",
+        "label": "Brent (fuel/poly cost proxy)",
+        "dial": "cost",
+        "note": null
+      },
+      {
+        "key": "inr_usd",
+        "label": "USDINR",
+        "dial": "cost",
+        "note": "INR weak can lift export enquiry"
+      }
+    ],
+    "surat_textiles_processing": [
+      {
+        "key": "brent",
+        "label": "Brent (process fuel/chem cost)",
+        "dial": "cost",
+        "note": null
+      },
+      {
+        "key": "inr_usd",
+        "label": "USDINR",
+        "dial": "cost",
+        "note": null
+      },
+      {
+        "key": "cotton",
+        "label": "Cotton futures",
+        "dial": "cost",
+        "note": "Indirect; PSF/POY manual"
+      }
+    ],
+    "morbi_ceramics": [
+      {
+        "key": "natgas",
+        "label": "Natural gas (NG=F)",
+        "dial": "cost",
+        "note": "Kiln fuel proxy"
+      },
+      {
+        "key": "brent",
+        "label": "Brent",
+        "dial": "cost",
+        "note": "Fuel cost co-move"
+      },
+      {
+        "key": "inr_usd",
+        "label": "USDINR",
+        "dial": "cost",
+        "note": "Import/export mix"
+      }
+    ],
+    "vapi_ankleshwar_chemicals": [
+      {
+        "key": "brent",
+        "label": "Brent / naphtha proxy",
+        "dial": "cost",
+        "note": "Feedstock stand-in"
+      },
+      {
+        "key": "inr_usd",
+        "label": "USDINR",
+        "dial": "cost",
+        "note": null
+      }
+    ],
+    "diamonds_jewellery": [
+      {
+        "key": "inr_usd",
+        "label": "USDINR",
+        "dial": "demand",
+        "note": "INR weak often helps polished exports"
+      },
+      {
+        "key": "gold",
+        "label": "Gold futures (GC=F)",
+        "dial": "demand",
+        "note": "Jewellery demand / inventory cost"
+      }
+    ],
+    "auto_ancillary": [
+      {
+        "key": "nifty_auto",
+        "label": "Nifty Auto",
+        "dial": "demand",
+        "note": null
+      },
+      {
+        "key": "inr_usd",
+        "label": "USDINR",
+        "dial": "cost",
+        "note": null
+      }
+    ],
+    "ports_logistics": [
+      {
+        "key": "macro:port_mundra",
+        "label": "Mundra throughput",
+        "dial": "demand",
+        "note": "From macros"
+      },
+      {
+        "key": "macro:port_hazira",
+        "label": "Hazira throughput",
+        "dial": "demand",
+        "note": "From macros"
+      },
+      {
+        "key": "brent",
+        "label": "Brent (freight/bunker co-move)",
+        "dial": "cost",
+        "note": null
+      }
+    ],
+    "renewables": [
+      {
+        "key": "inr_usd",
+        "label": "USDINR (module import)",
+        "dial": "cost",
+        "note": "Mostly manual \u2014 policy/tariff field notes"
+      }
+    ]
   },
   "proxies": {
     "TRIDENT.NS": {
@@ -496,6 +786,7 @@
       "KPIGREEN.NS"
     ]
   },
+  "listed_pulse_note": "Listed NSE names are an optional secondary pulse (price/1m only). Not for credit decision. Do not invent company fundamentals.",
   "macros": {
     "gsdp_yoy": {
       "name": "Gujarat GSDP growth YoY",
@@ -666,7 +957,8 @@
     "Power: MGVCL reachable but no auto numeric extract \u2014 null (manual paste)"
   ],
   "fetch_notes": [
-    "Proxies with prices: 30/30",
+    "Leading Yahoo series filled: 6/6",
+    "Listed pulse prices: 30/30 (secondary only)",
     "Macros filled (fact): ['state_gst', 'port_mundra', 'port_hazira', 'rainfall_agri']",
     "Macros still null: ['gsdp_yoy', 'iip_gujarat', 'power_dgvcl', 'power_mgvcl', 'port_kandla', 'rbi_gujarat_credit']",
     "WARN: Ports: Kandla/Deendayal not scrapeable (thin HTML) \u2014 null",

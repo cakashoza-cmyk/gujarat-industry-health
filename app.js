@@ -1,4 +1,3 @@
-
 (function () {
   "use strict";
 
@@ -6,15 +5,15 @@
   const LS_AI_MODEL = "gj_health_deepseek_model";
   const LS_MACROS = "gj_health_macros_v1";
   const LS_DIALS = "gj_health_dials_v1";
-  const LS_PROXY_F = "gj_health_proxy_fundies_v1";
+  const LS_FIELD = "gj_health_field_notes_v1";
   const LS_RUN = "gj_health_gates_v1";
 
   const CLUSTERS = [
-    { id: "surat_textiles_weaving", name: "Surat textiles - weaving", region: "Surat" },
-    { id: "surat_textiles_processing", name: "Surat textiles - processing", region: "Surat" },
+    { id: "surat_textiles_weaving", name: "Surat textiles — weaving", region: "Surat" },
+    { id: "surat_textiles_processing", name: "Surat textiles — processing", region: "Surat" },
     { id: "morbi_ceramics", name: "Morbi ceramics", region: "Morbi" },
-    { id: "vapi_ankleshwar_chemicals", name: "Vapi-Ankleshwar chemicals", region: "South Gujarat" },
-    { id: "diamonds_jewellery", name: "Diamonds / jewellery", region: "Surat / retail proxy" },
+    { id: "vapi_ankleshwar_chemicals", name: "Vapi–Ankleshwar chemicals", region: "South Gujarat" },
+    { id: "diamonds_jewellery", name: "Diamonds / jewellery", region: "Surat" },
     { id: "auto_ancillary", name: "Auto / ancillary", region: "Gujarat footprint" },
     { id: "ports_logistics", name: "Ports / logistics", region: "Mundra / Hazira / Kandla" },
     { id: "renewables", name: "Renewables", region: "Gujarat RE" },
@@ -40,19 +39,59 @@
     ["rainfall_agri", "Rainfall / agri note", "qualitative OK"],
   ];
 
-  let snapshot = { market: {}, proxies: {}, proxy_map: {}, macros: {}, warnings: [] };
+  // Fallback indicator map if snapshot lacks it
+  const DEFAULT_INDICATOR_MAP = {
+    surat_textiles_weaving: [
+      { key: "cotton", label: "Cotton futures", dial: "cost" },
+      { key: "brent", label: "Brent", dial: "cost" },
+      { key: "inr_usd", label: "USDINR", dial: "cost" },
+    ],
+    surat_textiles_processing: [
+      { key: "brent", label: "Brent", dial: "cost" },
+      { key: "inr_usd", label: "USDINR", dial: "cost" },
+    ],
+    morbi_ceramics: [
+      { key: "natgas", label: "Natural gas", dial: "cost" },
+      { key: "brent", label: "Brent", dial: "cost" },
+      { key: "inr_usd", label: "USDINR", dial: "cost" },
+    ],
+    vapi_ankleshwar_chemicals: [
+      { key: "brent", label: "Brent / naphtha proxy", dial: "cost" },
+      { key: "inr_usd", label: "USDINR", dial: "cost" },
+    ],
+    diamonds_jewellery: [
+      { key: "inr_usd", label: "USDINR", dial: "demand" },
+      { key: "gold", label: "Gold", dial: "demand" },
+    ],
+    auto_ancillary: [
+      { key: "nifty_auto", label: "Nifty Auto", dial: "demand" },
+      { key: "inr_usd", label: "USDINR", dial: "cost" },
+    ],
+    ports_logistics: [
+      { key: "macro:port_mundra", label: "Mundra", dial: "demand" },
+      { key: "macro:port_hazira", label: "Hazira", dial: "demand" },
+      { key: "brent", label: "Brent", dial: "cost" },
+    ],
+    renewables: [
+      { key: "inr_usd", label: "USDINR", dial: "cost", note: "Mostly manual" },
+    ],
+  };
+
+  let snapshot = { market: {}, leading: {}, proxies: {}, proxy_map: {}, macros: {}, indicator_map: {}, warnings: [] };
   let macros = {};
   let dials = {};
-  let proxyFundies = {};
+  let fieldNotes = {};
   let run = defaultRun();
+  let activeCluster = "surat_textiles_weaving";
 
   try { macros = JSON.parse(localStorage.getItem(LS_MACROS) || "{}") || {}; } catch (e) { macros = {}; }
   try { dials = JSON.parse(localStorage.getItem(LS_DIALS) || "{}") || {}; } catch (e) { dials = {}; }
-  try { proxyFundies = JSON.parse(localStorage.getItem(LS_PROXY_F) || "{}") || {}; } catch (e) { proxyFundies = {}; }
+  try { fieldNotes = JSON.parse(localStorage.getItem(LS_FIELD) || "{}") || {}; } catch (e) { fieldNotes = {}; }
   try {
     var saved = JSON.parse(localStorage.getItem(LS_RUN) || "null");
     if (saved && saved.g1) run = Object.assign(defaultRun(), saved);
   } catch (e) {}
+  if (run.clusterId) activeCluster = run.clusterId;
 
   function defaultRun() {
     return {
@@ -70,7 +109,7 @@
 
   function saveMacros() { localStorage.setItem(LS_MACROS, JSON.stringify(macros)); }
   function saveDials() { localStorage.setItem(LS_DIALS, JSON.stringify(dials)); }
-  function saveProxyF() { localStorage.setItem(LS_PROXY_F, JSON.stringify(proxyFundies)); }
+  function saveField() { localStorage.setItem(LS_FIELD, JSON.stringify(fieldNotes)); }
   function saveRun() { localStorage.setItem(LS_RUN, JSON.stringify(run)); }
 
   function escapeHtml(s) {
@@ -89,18 +128,49 @@
     return dials[id];
   }
 
-  function majorityDirection(dirs) {
-    var known = dirs.filter(function (d) { return d && d !== "unknown" && d !== "flat"; });
-    if (known.length < 1) return { score: "Unclear", detail: "insufficient" };
-    var rising = known.filter(function (d) { return d === "rising"; }).length;
-    var falling = known.filter(function (d) { return d === "falling"; }).length;
-    var n = known.length;
-    if (rising / n >= 0.6) return { score: "Rising", detail: rising + "/" + n };
-    if (falling / n >= 0.6) return { score: "Falling", detail: falling + "/" + n };
-    return { score: "Unclear", detail: "mixed " + rising + "↑ " + falling + "↓" };
+  function indicatorMapFor(id) {
+    return (snapshot.indicator_map && snapshot.indicator_map[id]) || DEFAULT_INDICATOR_MAP[id] || [];
   }
 
-  /** Map dial raw dir to health signal: +1 healthy, -1 unhealthy, 0 unclear */
+  function resolveIndicator(spec) {
+    var key = spec.key || "";
+    if (key.indexOf("macro:") === 0) {
+      var mk = key.slice(6);
+      var m = (snapshot.macros || {})[mk] || {};
+      return {
+        label: spec.label || mk,
+        dial: spec.dial,
+        note: spec.note || m.note,
+        value: m.value,
+        display: m.display || (m.value != null ? String(m.value) : null),
+        direction: m.direction || "unknown",
+        change_1m_pct: (m.raw && m.raw.yoy_pct != null) ? m.raw.yoy_pct : null,
+        as_of: m.as_of,
+        evidence: m.evidence || "unknown",
+        source: m.source,
+        null_reason: m.error,
+      };
+    }
+    var q = (snapshot.leading && snapshot.leading[key]) || (snapshot.market && snapshot.market[key]) || {};
+    return {
+      label: spec.label || key,
+      dial: spec.dial,
+      note: spec.note,
+      value: q.value,
+      display: q.value != null ? (Math.round(q.value * 100) / 100) : null,
+      direction: q.direction_1m || "unknown",
+      change_1m_pct: q.change_1m_pct,
+      as_of: q.as_of,
+      evidence: q.evidence || (q.value != null ? "fact" : "unknown"),
+      source: q.source,
+      null_reason: q.error,
+    };
+  }
+
+  function indicatorsFor(id) {
+    return indicatorMapFor(id).map(resolveIndicator);
+  }
+
   function dialHealthSignal(key, dir) {
     if (!dir || dir === "unknown" || dir === "flat") return 0;
     var inv = key === "cost" || key === "wc";
@@ -109,65 +179,129 @@
     return 0;
   }
 
+  /** Indicator → health signal for its mapped dial (cost rising = bad, demand rising = good). */
+  function indicatorHealth(ind) {
+    if (!ind || ind.value == null || ind.direction === "unknown" || ind.direction === "flat") return 0;
+    return dialHealthSignal(ind.dial || "cost", ind.direction);
+  }
+
+  /**
+   * Health verdict weight: dials (primary) + leading indicators + soft macro skim.
+   * Listed pulse is NOT in score — secondary check only via divergence().
+   */
   function scoreCluster(id) {
     var d = ensureClusterDials(id);
-    var signals = DIAL_KEYS.map(function (dk) {
-      return { key: dk.key, raw: d[dk.key] || "unknown", health: dialHealthSignal(dk.key, d[dk.key]) };
+    var dialSignals = DIAL_KEYS.map(function (dk) {
+      return { key: dk.key, raw: d[dk.key] || "unknown", health: dialHealthSignal(dk.key, d[dk.key]), layer: "dial" };
     });
-    var known = signals.filter(function (s) { return s.health !== 0; });
-    if (known.length < 2) {
-      return { health: "Unclear", detail: "need ≥2 known dials", signals: signals, dialScores: {} };
+    var inds = indicatorsFor(id);
+    var indSignals = inds.filter(function (i) { return i.value != null; }).map(function (i) {
+      return { key: i.label, raw: i.direction, health: indicatorHealth(i), layer: "indicator", dial: i.dial };
+    });
+
+    var dialKnown = dialSignals.filter(function (s) { return s.health !== 0; });
+    var indKnown = indSignals.filter(function (s) { return s.health !== 0; });
+
+    // Weight: dials count 2x, indicators 1x
+    var score = 0;
+    var weight = 0;
+    dialKnown.forEach(function (s) { score += s.health * 2; weight += 2; });
+    indKnown.forEach(function (s) { score += s.health; weight += 1; });
+
+    var health = "Unclear";
+    var detail = "";
+    if (weight < 2) {
+      health = "Unclear";
+      detail = "need dials and/or leading indicators";
+    } else {
+      var ratio = score / weight;
+      if (ratio >= 0.45) health = "Strong";
+      else if (ratio <= -0.45) health = "Weak";
+      else health = "Mixed";
+      detail = "dials " + dialKnown.length + " · indicators " + indKnown.length +
+        " · score " + (Math.round(ratio * 100) / 100);
     }
-    var up = known.filter(function (s) { return s.health > 0; }).length;
-    var down = known.filter(function (s) { return s.health < 0; }).length;
-    var health = "Mixed";
-    if (up >= 3 && down === 0) health = "Strong";
-    else if (down >= 3 && up === 0) health = "Weak";
-    else if (up > down && down <= 1) health = "Strong";
-    else if (down > up && up <= 1) health = "Weak";
-    else if (up === 0 && down === 0) health = "Unclear";
-    var dialScores = {};
-    DIAL_KEYS.forEach(function (dk) {
-      dialScores[dk.key] = majorityDirection([d[dk.key] || "unknown"]).score;
-    });
+
+    var fn = (fieldNotes[id] || "").trim();
+    if (fn) detail += " · field notes ✓";
+
+    // Soft macro skim for ports/GST (display only)
+    var macroBits = [];
+    var sm = snapshot.macros || {};
+    if (id === "ports_logistics") {
+      if (sm.port_mundra && sm.port_mundra.value != null) macroBits.push("Mundra fact");
+      if (sm.port_hazira && sm.port_hazira.value != null) macroBits.push("Hazira fact");
+    }
+    if (sm.state_gst && sm.state_gst.value != null) macroBits.push("GST fact");
+
     return {
       health: health,
-      detail: up + " healthy / " + down + " unhealthy of " + known.length + " known",
-      signals: signals,
-      dialScores: dialScores,
+      detail: detail,
+      dialSignals: dialSignals,
+      indSignals: indSignals,
+      fieldNotes: fn,
+      macroBits: macroBits,
+      inds: inds,
     };
   }
 
   function proxyList(clusterId) {
-    var map = snapshot.proxy_map || {};
-    return map[clusterId] || [];
+    return (snapshot.proxy_map || {})[clusterId] || [];
   }
 
   function proxyQuote(sym) {
     return (snapshot.proxies && snapshot.proxies[sym]) || {};
   }
 
+  /**
+   * Divergence: indicators vs dials conflict → STOP candidate.
+   * Listed pulse only soft secondary note (not primary STOP).
+   */
   function divergence(clusterId) {
     var sc = scoreCluster(clusterId);
+    var d = ensureClusterDials(clusterId);
+    var conflicts = [];
+
+    // Per-dial: if dial set and majority of indicators on that dial disagree
+    ["demand", "cost", "wc", "policy"].forEach(function (dial) {
+      var dialDir = d[dial] || "unknown";
+      if (dialDir === "unknown" || dialDir === "flat") return;
+      var dialH = dialHealthSignal(dial, dialDir);
+      if (dialH === 0) return;
+      var related = (sc.indSignals || []).filter(function (s) {
+        return s.dial === dial && s.health !== 0;
+      });
+      if (related.length < 1) return;
+      var disagree = related.filter(function (s) { return s.health !== dialH; });
+      if (disagree.length / related.length >= 0.5) {
+        conflicts.push(dial + " dial vs leading indicators");
+      }
+    });
+
+    // Soft pulse note (secondary)
     var syms = proxyList(clusterId);
     var dirs = syms.map(function (s) { return proxyQuote(s).direction_1m || "unknown"; });
-    var known = dirs.filter(function (d) { return d === "rising" || d === "falling"; });
-    if (known.length < 2 || sc.health === "Unclear" || sc.health === "Mixed") {
-      return { flag: false, reason: "insufficient for divergence test", rising: 0, falling: 0, health: sc.health };
+    var known = dirs.filter(function (x) { return x === "rising" || x === "falling"; });
+    var pulseNote = null;
+    if (known.length >= 2 && (sc.health === "Strong" || sc.health === "Weak")) {
+      var rising = known.filter(function (x) { return x === "rising"; }).length;
+      var falling = known.filter(function (x) { return x === "falling"; }).length;
+      if (sc.health === "Strong" && falling / known.length >= 0.5) {
+        pulseNote = "Soft: listed pulse falling while cluster Strong (secondary — not credit)";
+      }
+      if (sc.health === "Weak" && rising / known.length >= 0.5) {
+        pulseNote = "Soft: listed pulse rising while cluster Weak (secondary — not credit)";
+      }
     }
-    var rising = known.filter(function (d) { return d === "rising"; }).length;
-    var falling = known.filter(function (d) { return d === "falling"; }).length;
-    var disagree = false;
-    var reason = "aligned";
-    if (sc.health === "Strong" && falling / known.length >= 0.5) {
-      disagree = true;
-      reason = "Cluster Strong but ≥50% proxies falling 1m";
-    }
-    if (sc.health === "Weak" && rising / known.length >= 0.5) {
-      disagree = true;
-      reason = "Cluster Weak but ≥50% proxies rising 1m";
-    }
-    return { flag: disagree, reason: reason, rising: rising, falling: falling, health: sc.health, known: known.length };
+
+    var flag = conflicts.length > 0;
+    return {
+      flag: flag,
+      reason: flag ? ("Indicator↔dial conflict: " + conflicts.join("; ")) : "no indicator↔dial conflict",
+      conflicts: conflicts,
+      pulseNote: pulseNote,
+      health: sc.health,
+    };
   }
 
   async function callDeepSeek(messages) {
@@ -196,11 +330,13 @@
     document.querySelectorAll(".tab").forEach(function (t) {
       t.classList.toggle("active", t.dataset.tab === name);
     });
-    ["ops", "board", "macros", "settings"].forEach(function (id) {
-      document.getElementById("view-" + id).classList.toggle("hidden", id !== name);
+    ["clusters", "ops", "macros", "settings"].forEach(function (id) {
+      var el = document.getElementById("view-" + id);
+      if (el) el.classList.toggle("hidden", id !== name);
     });
-    if (name === "board") renderBoard();
+    if (name === "clusters") renderClusters();
     if (name === "macros") renderMacros();
+    if (name === "ops") renderGates();
   }
 
   document.getElementById("tabs").addEventListener("click", function (e) {
@@ -230,6 +366,181 @@
     }).join("") + "</select>";
   }
 
+  function chipClass(dir) {
+    if (dir === "rising") return "up";
+    if (dir === "falling") return "down";
+    return "";
+  }
+
+  function renderScoreGrid() {
+    var root = document.getElementById("score-grid");
+    root.innerHTML = CLUSTERS.map(function (c) {
+      var sc = scoreCluster(c.id);
+      var chips = (sc.inds || []).slice(0, 4).map(function (ind) {
+        if (ind.value == null) {
+          return '<span class="ind-chip">null ' + escapeHtml(ind.label) + "</span>";
+        }
+        var pct = ind.change_1m_pct != null ? (ind.change_1m_pct > 0 ? "+" : "") + ind.change_1m_pct + "%" : ind.direction;
+        return '<span class="ind-chip ' + chipClass(ind.direction) + '">' +
+          escapeHtml(ind.label) + " " + escapeHtml(String(pct)) + " →" + escapeHtml(ind.dial) + "</span>";
+      }).join("");
+      var fn = (fieldNotes[c.id] || "").trim();
+      return '<div class="score-card' + (c.id === activeCluster ? " active" : "") + '" data-cluster="' + c.id + '">' +
+        "<h3>" + escapeHtml(c.name) + "</h3>" +
+        '<span class="pill ' + sc.health.toLowerCase() + '">' + escapeHtml(sc.health) + "</span> " +
+        '<span class="muted">' + escapeHtml(c.region) + "</span>" +
+        '<div class="inds">' + (chips || '<span class="muted">no indicators yet</span>') + "</div>" +
+        '<div class="fn">' + (fn ? "📝 " + escapeHtml(fn.slice(0, 80)) : '<span class="muted">No field notes yet</span>') + "</div>" +
+        "</div>";
+    }).join("");
+    root.querySelectorAll(".score-card").forEach(function (card) {
+      card.onclick = function () {
+        activeCluster = card.getAttribute("data-cluster");
+        run.clusterId = activeCluster;
+        saveRun();
+        renderClusters();
+      };
+    });
+  }
+
+  function renderClusterDetail() {
+    var id = activeCluster;
+    var c = clusterById(id);
+    var d = ensureClusterDials(id);
+    var sc = scoreCluster(id);
+    document.getElementById("detail-title").textContent = c.name;
+    document.getElementById("detail-health").innerHTML =
+      '<span class="pill ' + sc.health.toLowerCase() + '">' + escapeHtml(sc.health) + "</span> " +
+      '<span class="muted">' + escapeHtml(sc.detail) +
+      (sc.macroBits.length ? " · macros: " + sc.macroBits.join(", ") : "") + "</span>";
+
+    var inds = sc.inds || [];
+    document.getElementById("leading-box").innerHTML = inds.length ? (
+      "<table><tr><th>Indicator</th><th>Value</th><th>1m / dir</th><th>Feeds dial</th><th>Note</th></tr>" +
+      inds.map(function (ind) {
+        return "<tr><td>" + escapeHtml(ind.label) +
+          (ind.evidence === "fact" ? ' <span class="ai-tag">fact</span>' : "") +
+          "</td><td>" +
+          (ind.display != null ? escapeHtml(String(ind.display)) : '<span class="muted">null</span>') +
+          (ind.as_of ? '<div class="muted">' + escapeHtml(ind.as_of) + "</div>" : "") +
+          "</td><td>" + escapeHtml(ind.direction || "unknown") +
+          (ind.change_1m_pct != null ? " (" + ind.change_1m_pct + "%)" : "") +
+          "</td><td>" + escapeHtml(ind.dial || "—") +
+          "</td><td class=\"muted\">" + escapeHtml(ind.note || ind.null_reason || "") +
+          "</td></tr>";
+      }).join("") + "</table>" +
+      (id.indexOf("textile") >= 0
+        ? '<p class="muted" style="margin-top:6px">PSF / POY / polyester yarn: no Yahoo series — paste in field notes if you have polymer-report prices.</p>'
+        : "")
+    ) : '<p class="muted">No indicator map for this cluster.</p>';
+
+    document.getElementById("dials-form").innerHTML = DIAL_KEYS.map(function (dk) {
+      // Soft hint from indicators
+      var hintInds = inds.filter(function (i) { return i.dial === dk.key && i.value != null; });
+      var hint = hintInds.map(function (i) {
+        return i.label + " " + i.direction;
+      }).join("; ");
+      return '<label class="field">' + escapeHtml(dk.label) +
+        '<span class="formula">' + escapeHtml(dk.formula) +
+        (dk.invert ? " · inverted in health" : "") +
+        (hint ? " · indicators: " + escapeHtml(hint) : "") + "</span>" +
+        dirSelect("dial-" + dk.key, d[dk.key] || "unknown") + "</label>";
+    }).join("");
+
+    document.getElementById("field-notes").value = fieldNotes[id] || "";
+
+    // Listed pulse — collapsed, price/1m only
+    var syms = proxyList(id);
+    var rows = syms.map(function (sym) {
+      var q = proxyQuote(sym);
+      return "<tr><td>" + escapeHtml(sym) + "</td><td>" +
+        (q.value != null ? escapeHtml(String(Math.round(q.value * 100) / 100)) : "null") +
+        "</td><td>" + escapeHtml(q.direction_1m || "unknown") +
+        (q.change_1m_pct != null ? " (" + q.change_1m_pct + "%)" : "") +
+        "</td><td class=\"muted\">" + escapeHtml(q.as_of || "") + "</td></tr>";
+    }).join("");
+    document.getElementById("proxies-table").innerHTML = syms.length
+      ? "<table><tr><th>Symbol</th><th>Price</th><th>1m dir</th><th>as_of</th></tr>" + rows + "</table>"
+      : '<p class="muted">No listed pulse tickers mapped.</p>';
+
+    var div = divergence(id);
+    var html = "";
+    if (div.flag) {
+      html = '<div class="verdict stop">DIVERGENCE · ' + escapeHtml(div.reason) + "</div>";
+    } else {
+      html = '<div class="muted">Divergence: ' + escapeHtml(div.reason) + "</div>";
+    }
+    if (div.pulseNote) {
+      html += '<div class="muted" style="margin-top:4px">' + escapeHtml(div.pulseNote) + "</div>";
+    }
+    document.getElementById("divergence-box").innerHTML = html;
+  }
+
+  function renderClusters() {
+    renderScoreGrid();
+    renderClusterDetail();
+  }
+
+  document.getElementById("btn-save-cluster").onclick = function () {
+    var id = activeCluster;
+    var d = ensureClusterDials(id);
+    DIAL_KEYS.forEach(function (dk) {
+      var el = document.getElementById("dial-" + dk.key);
+      if (el) d[dk.key] = el.value;
+    });
+    fieldNotes[id] = document.getElementById("field-notes").value || "";
+    saveDials();
+    saveField();
+    var st = document.getElementById("cluster-status");
+    st.textContent = "Saved dials + field notes locally.";
+    st.className = "status ok";
+    renderClusters();
+  };
+
+  document.getElementById("btn-ai-dials").onclick = async function () {
+    var st = document.getElementById("cluster-status");
+    st.className = "status loading"; st.textContent = "Calling DeepSeek…";
+    var id = activeCluster;
+    try {
+      var sc = scoreCluster(id);
+      var data = await callDeepSeek([
+        {
+          role: "system",
+          content: "Gujarat SME credit cluster dial assistant. JSON: {demand,cost,wc,policy,notes,warnings[]}. " +
+            "Each dial: rising|flat|falling|unknown. Use leading indicators + macros + field notes. " +
+            "cost=power/fuel pressure; wc=receivables stress. Prefer unknown over inventing. " +
+            "Do NOT invent company fundamentals or listed-company fundies.",
+        },
+        {
+          role: "user",
+          content: "Cluster: " + clusterById(id).name +
+            ". Indicators: " + JSON.stringify(sc.inds).slice(0, 2500) +
+            ". Macros skim: " + JSON.stringify({
+              gst: (snapshot.macros || {}).state_gst,
+              mundra: (snapshot.macros || {}).port_mundra,
+              hazira: (snapshot.macros || {}).port_hazira,
+            }).slice(0, 1200) +
+            ". Field notes: " + JSON.stringify(fieldNotes[id] || "").slice(0, 800),
+        },
+      ]);
+      var d = ensureClusterDials(id);
+      ["demand", "cost", "wc", "policy"].forEach(function (k) {
+        if (data[k]) d[k] = data[k];
+      });
+      if (data.notes) {
+        var cur = fieldNotes[id] || "";
+        fieldNotes[id] = (cur ? cur + "\n" : "") + "[AI dial note] " + String(data.notes);
+        saveField();
+      }
+      saveDials();
+      st.className = "status ok";
+      st.textContent = "AI dial draft from indicators — review." + (data.warnings ? " " + data.warnings.join("; ") : "");
+      renderClusters();
+    } catch (e) {
+      st.className = "status err"; st.textContent = String(e.message || e);
+    }
+  };
+
   function renderMacros() {
     var root = document.getElementById("macros-form");
     var snapM = snapshot.macros || {};
@@ -246,7 +557,9 @@
       var metaBits = [];
       if (snap.source) metaBits.push("source: " + snap.source);
       if (snap.as_of) metaBits.push("as_of: " + snap.as_of);
-      if (snap.source_url) metaBits.push('<a href="' + escapeHtml(snap.source_url) + '" target="_blank" rel="noopener" style="color:#93c5fd">link</a>');
+      if (snap.source_url) {
+        metaBits.push('<a href="' + escapeHtml(snap.source_url) + '" target="_blank" rel="noopener" style="color:#93c5fd">link</a>');
+      }
       if (snap.note) metaBits.push(snap.note);
       if (snap.error && snap.value == null) metaBits.push("null: " + snap.error);
       metaBits.push("evidence: " + ev);
@@ -258,13 +571,8 @@
         "</label>";
     }).join("");
     var warns = (snapshot.warnings || []).slice();
-    var notes = (snapshot.fetch_notes || []).filter(function (n) {
-      return n.indexOf("Macros") === 0 || n.indexOf("WARN:") === 0;
-    });
     document.getElementById("macro-warnings").innerHTML =
-      (warns.map(function (w) { return "⚠ " + escapeHtml(w); }).concat(
-        notes.map(function (n) { return escapeHtml(n); })
-      ).join("<br/>")) || "No fetch warnings.";
+      warns.map(function (w) { return "⚠ " + escapeHtml(w); }).join("<br/>") || "No fetch warnings.";
   }
 
   document.getElementById("btn-save-macros").onclick = function () {
@@ -287,172 +595,37 @@
     try {
       var snapMacros = snapshot.macros || {};
       var data = await callDeepSeek([
-        { role: "system", content: "Gujarat macro assistant for credit field work. JSON object with keys gsdp_yoy,iip_gujarat,state_gst,power_dgvcl,power_mgvcl,port_mundra,port_hazira,port_kandla,rbi_gujarat_credit,rainfall_agri and optional *_dir (rising|falling|flat|unknown) plus warnings[]. CRITICAL: never invent numbers. If snapshot.macros[key].evidence==='fact' and value/display present, COPY that into the output and do not replace with guesses. Only fill null/unknown keys if you have a real public figure; else leave null and warn. Values may be strings for qualitative notes." },
-        { role: "user", content: "Use snapshot macros when present (fact). Snapshot macros: " + JSON.stringify(snapMacros).slice(0, 4500) + " Market: " + JSON.stringify(snapshot.market || {}).slice(0, 1200) + " Manual overrides: " + JSON.stringify(macros).slice(0, 1200) },
+        {
+          role: "system",
+          content: "Gujarat macro assistant. JSON keys gsdp_yoy,iip_gujarat,state_gst,power_dgvcl,power_mgvcl,port_mundra,port_hazira,port_kandla,rbi_gujarat_credit,rainfall_agri + optional *_dir + warnings[]. " +
+            "CRITICAL: never invent. If snapshot evidence=fact, COPY it. Only fill null keys with real public figures else null.",
+        },
+        {
+          role: "user",
+          content: "Snapshot macros: " + JSON.stringify(snapMacros).slice(0, 4500),
+        },
       ]);
       macros._ev = macros._ev || {};
       MACRO_KEYS.forEach(function (row) {
         var k = row[0];
         var snap = snapMacros[k] || {};
-        if (data[k] != null && data[k] !== "") {
-          // If snapshot already has fact, tag as fact when AI echoes it; else ai
-          if (snap.evidence === "fact" && snap.value != null) {
-            macros[k] = data[k];
-            macros._ev[k] = "fact";
-          } else {
-            macros[k] = data[k];
-            macros._ev[k] = "ai";
-          }
-        } else if (snap.evidence === "fact" && (snap.display != null || snap.value != null)) {
+        if (snap.evidence === "fact" && (snap.display != null || snap.value != null)) {
           macros[k] = snap.display != null ? snap.display : snap.value;
           macros._ev[k] = "fact";
+          if (snap.direction) macros[k + "_dir"] = snap.direction;
+        } else if (data[k] != null && data[k] !== "") {
+          macros[k] = data[k];
+          macros._ev[k] = "ai";
         }
-        if (data[k + "_dir"]) {
+        if (data[k + "_dir"] && macros._ev[k] !== "fact") {
           macros[k + "_dir"] = data[k + "_dir"];
-          macros._ev[k + "_dir"] = (snap.evidence === "fact" ? "fact" : "ai");
-        } else if (snap.direction && snap.direction !== "unknown") {
-          macros[k + "_dir"] = snap.direction;
-          macros._ev[k + "_dir"] = snap.evidence || "fact";
+          macros._ev[k + "_dir"] = "ai";
         }
       });
       saveMacros();
       st.className = "status ok";
-      st.textContent = "AI fill applied (tagged ai). Verify state releases." + (data.warnings ? " " + data.warnings.join("; ") : "");
+      st.textContent = "Applied (fact preserved; AI only on nulls)." + (data.warnings ? " " + data.warnings.join("; ") : "");
       renderMacros();
-    } catch (e) {
-      st.className = "status err"; st.textContent = String(e.message || e);
-    }
-  };
-
-  function renderBoard() {
-    var sel = document.getElementById("cluster-select");
-    if (!sel.options.length) {
-      sel.innerHTML = CLUSTERS.map(function (c) {
-        return '<option value="' + c.id + '">' + escapeHtml(c.name) + "</option>";
-      }).join("");
-    }
-    if (run.clusterId) sel.value = run.clusterId;
-    sel.onchange = function () {
-      run.clusterId = sel.value;
-      saveRun();
-      renderBoard();
-    };
-    var id = sel.value || run.clusterId;
-    run.clusterId = id;
-    var d = ensureClusterDials(id);
-    var sc = scoreCluster(id);
-    document.getElementById("cluster-health").innerHTML =
-      '<span class="pill ' + sc.health.toLowerCase() + '">' + escapeHtml(sc.health) + "</span> " +
-      '<span class="muted">' + escapeHtml(sc.detail) + " · " + escapeHtml(clusterById(id).region) + "</span>";
-
-    document.getElementById("dials-form").innerHTML = DIAL_KEYS.map(function (dk) {
-      return '<label class="field">' + escapeHtml(dk.label) +
-        '<span class="formula">' + escapeHtml(dk.formula) + (dk.invert ? " · inverted in health" : "") + "</span>" +
-        dirSelect("dial-" + dk.key, d[dk.key] || "unknown") + "</label>";
-    }).join("") +
-      '<label class="field" style="flex:2">Notes<textarea id="dial-notes" class="blue">' + escapeHtml(d.notes || "") + "</textarea></label>";
-
-    // proxies table
-    var syms = proxyList(id);
-    var rows = syms.map(function (sym) {
-      var q = proxyQuote(sym);
-      var f = proxyFundies[sym] || {};
-      return "<tr><td><strong>" + escapeHtml(sym) + "</strong><div class=\"muted\">proxy</div></td>" +
-        "<td>" + (q.value != null ? escapeHtml(String(Math.round(q.value * 100) / 100)) : "null") +
-        "<div class=\"muted\">" + escapeHtml(q.as_of || "") + "</div></td>" +
-        "<td>" + escapeHtml(q.direction_1m || "unknown") +
-        (q.change_1m_pct != null ? " (" + q.change_1m_pct + "%)" : "") + "</td>" +
-        '<td><input class="blue" style="width:70px" data-pf="' + sym + '" data-fk="rev" placeholder="rev%" value="' + escapeHtml(f.rev || "") + '"/></td>' +
-        '<td><input class="blue" style="width:70px" data-pf="' + sym + '" data-fk="ebitda" placeholder="EBITDA%" value="' + escapeHtml(f.ebitda || "") + '"/></td>' +
-        '<td><input class="blue" style="width:70px" data-pf="' + sym + '" data-fk="debt" placeholder="D/EBITDA" value="' + escapeHtml(f.debt || "") + '"/></td>' +
-        '<td><input class="blue" style="width:70px" data-pf="' + sym + '" data-fk="days" placeholder="rec/inv d" value="' + escapeHtml(f.days || "") + '"/></td>' +
-        "</tr>";
-    }).join("");
-    document.getElementById("proxies-table").innerHTML =
-      "<table><tr><th>Proxy (≠ buy)</th><th>Price</th><th>1m dir</th><th>Rev g%</th><th>EBITDA%</th><th>Debt/EBITDA</th><th>Days</th></tr>" +
-      rows + "</table>" +
-      '<p class="muted" style="margin-top:6px">Fundie fields are manual/AI from latest results - leave blank if unknown.</p>';
-
-    var div = divergence(id);
-    document.getElementById("divergence-box").innerHTML = div.flag
-      ? '<div class="verdict stop">DIVERGENCE · ' + escapeHtml(div.reason) + "</div>"
-      : '<div class="muted">Divergence check: ' + escapeHtml(div.reason) +
-        " (proxies ↑" + div.rising + " ↓" + div.falling + ")</div>";
-  }
-
-  document.getElementById("btn-save-dials").onclick = function () {
-    var id = document.getElementById("cluster-select").value;
-    var d = ensureClusterDials(id);
-    DIAL_KEYS.forEach(function (dk) {
-      var el = document.getElementById("dial-" + dk.key);
-      if (el) d[dk.key] = el.value;
-    });
-    var n = document.getElementById("dial-notes");
-    if (n) d.notes = n.value;
-    document.querySelectorAll("[data-pf]").forEach(function (el) {
-      var sym = el.getAttribute("data-pf");
-      var fk = el.getAttribute("data-fk");
-      proxyFundies[sym] = proxyFundies[sym] || {};
-      proxyFundies[sym][fk] = el.value;
-      proxyFundies[sym]._ev = proxyFundies[sym]._ev || {};
-      proxyFundies[sym]._ev[fk] = "manual";
-    });
-    saveDials();
-    saveProxyF();
-    document.getElementById("dials-status").textContent = "Dials + proxy fundies saved.";
-    document.getElementById("dials-status").className = "status ok";
-    renderBoard();
-  };
-
-  document.getElementById("btn-ai-dials").onclick = async function () {
-    var st = document.getElementById("dials-status");
-    st.className = "status loading"; st.textContent = "Calling DeepSeek…";
-    var id = document.getElementById("cluster-select").value;
-    try {
-      var data = await callDeepSeek([
-        { role: "system", content: "Gujarat industry cluster dial assistant for credit underwriting. JSON: {demand,cost,wc,policy,notes,warnings[]} each dial rising|flat|falling|unknown. cost=power/fuel/wage pressure; wc=receivables/WC stress. Never invent false precision; prefer unknown + warning." },
-        { role: "user", content: "Cluster: " + clusterById(id).name + ". Macros: " + JSON.stringify(macros).slice(0, 1500) + " Proxies 1m: " + JSON.stringify(proxyList(id).map(function (s) { return { s: s, q: proxyQuote(s) }; })).slice(0, 2000) },
-      ]);
-      var d = ensureClusterDials(id);
-      ["demand", "cost", "wc", "policy"].forEach(function (k) {
-        if (data[k]) d[k] = data[k];
-      });
-      if (data.notes) d.notes = String(data.notes) + "\n[AI draft]";
-      saveDials();
-      st.className = "status ok";
-      st.textContent = "AI dial draft loaded - review before relying." + (data.warnings ? " " + data.warnings.join("; ") : "");
-      renderBoard();
-    } catch (e) {
-      st.className = "status err"; st.textContent = String(e.message || e);
-    }
-  };
-
-  document.getElementById("btn-ai-proxies").onclick = async function () {
-    var st = document.getElementById("proxies-status");
-    st.className = "status loading"; st.textContent = "Calling DeepSeek…";
-    var id = document.getElementById("cluster-select").value;
-    try {
-      var data = await callDeepSeek([
-        { role: "system", content: "Credit proxy commentary for Gujarat industry health-check. JSON: {commentary:string, fundies:{SYMBOL:{rev,ebitda,debt,days}}, warnings[]}. These are PROXIES not buy ideas. Never invent fundies - null if unknown." },
-        { role: "user", content: "Cluster " + id + " symbols " + proxyList(id).join(", ") + " quotes " + JSON.stringify(proxyList(id).map(function (s) { return proxyQuote(s); })).slice(0, 3000) },
-      ]);
-      if (data.fundies) {
-        Object.keys(data.fundies).forEach(function (sym) {
-          proxyFundies[sym] = proxyFundies[sym] || {};
-          var src = data.fundies[sym] || {};
-          ["rev", "ebitda", "debt", "days"].forEach(function (fk) {
-            if (src[fk] != null && src[fk] !== "") {
-              proxyFundies[sym][fk] = src[fk];
-              proxyFundies[sym]._ev = proxyFundies[sym]._ev || {};
-              proxyFundies[sym]._ev[fk] = "ai";
-            }
-          });
-        });
-        saveProxyF();
-      }
-      st.className = "status ok";
-      st.textContent = (data.commentary || "AI commentary applied.") + (data.warnings ? " Warnings: " + data.warnings.join("; ") : "");
-      renderBoard();
     } catch (e) {
       st.className = "status err"; st.textContent = String(e.message || e);
     }
@@ -502,8 +675,8 @@
     var show = run.stoppedAt || run.current;
     var html = "";
     if (show === 1) {
-      html = '<div class="panel" style="border:none;padding:0"><h3>Gate 1 - QUESTION</h3>' +
-        '<p class="muted">One sentence: which cluster / credit decision? Cannot state -> STOP.</p>' +
+      html = '<div class="panel" style="border:none;padding:0"><h3>Gate 1 — QUESTION</h3>' +
+        '<p class="muted">One sentence: which cluster / credit decision? Cannot state → STOP.</p>' +
         '<label class="field">Cluster<select id="g1-cluster" class="blue">' +
         CLUSTERS.map(function (c) {
           return '<option value="' + c.id + '"' + (run.clusterId === c.id ? " selected" : "") + ">" + escapeHtml(c.name) + "</option>";
@@ -513,22 +686,28 @@
         '<button type="button" class="go" id="g1-go">PROCEED</button></div><div id="g1-v"></div></div>';
     } else if (show === 2) {
       var sc = scoreCluster(run.clusterId);
-      html = '<div class="panel" style="border:none;padding:0"><h3>Gate 2 - MACRO + CLUSTER REGIME</h3>' +
-        '<p class="muted">Cluster health + Gujarat macro skim. Unclear cluster -> STOP.</p>' +
+      var fn = (fieldNotes[run.clusterId] || "").trim();
+      html = '<div class="panel" style="border:none;padding:0"><h3>Gate 2 — REGIME (macros + dials + indicators + field notes)</h3>' +
+        '<p class="muted">Listed pulse ignored here. Unclear → STOP.</p>' +
         '<p><span class="pill ' + sc.health.toLowerCase() + '">' + escapeHtml(sc.health) + "</span> " +
         escapeHtml(clusterById(run.clusterId).name) + " · " + escapeHtml(sc.detail) + "</p>" +
         '<div class="row">' + DIAL_KEYS.map(function (dk) {
-          var d = ensureClusterDials(run.clusterId);
+          var dd = ensureClusterDials(run.clusterId);
           return '<div class="dial"><div class="name">' + escapeHtml(dk.label) + '</div><div class="score">' +
-            escapeHtml(d[dk.key] || "unknown") + "</div></div>";
+            escapeHtml(dd[dk.key] || "unknown") + "</div></div>";
         }).join("") + "</div>" +
-        '<label class="field">Notes<textarea id="g2-notes" class="blue">' + escapeHtml(run.g2.notes || "") + "</textarea></label>" +
+        '<p class="muted" style="margin-top:8px">Field notes: ' + (fn ? escapeHtml(fn.slice(0, 200)) : "<em>empty — add on Clusters tab</em>") + "</p>" +
+        '<div class="inds" style="margin-top:6px">' +
+        (sc.inds || []).filter(function (i) { return i.value != null; }).map(function (i) {
+          return '<span class="ind-chip ' + chipClass(i.direction) + '">' + escapeHtml(i.label) + " " + escapeHtml(i.direction) + "</span>";
+        }).join("") + "</div>" +
+        '<label class="field">Gate notes<textarea id="g2-notes" class="blue">' + escapeHtml(run.g2.notes || "") + "</textarea></label>" +
         '<div class="row" style="margin-top:10px"><button type="button" class="stop" id="g2-stop">STOP Unclear</button>' +
-        '<button type="button" class="go" id="g2-go"' + (sc.health === "Unclear" ? " disabled" : "") + '>PROCEED</button></div><div id="g2-v"></div></div>';
+        '<button type="button" class="go" id="g2-go"' + (sc.health === "Unclear" ? " disabled" : "") + ">PROCEED</button></div><div id=\"g2-v\"></div></div>";
     } else if (show === 3) {
       var items = ["Power tariff / fuel cost flip", "Export order book flip", "Receivables days spike", "Policy/BIS/duty change", "Port congestion / freight flip", "Peer insolvency / WC stress news"];
-      html = '<div class="panel" style="border:none;padding:0"><h3>Gate 3 - CHANGE</h3>' +
-        '<p class="muted">Leading watchlist. 0-1 flipped -> STOP.</p>' +
+      html = '<div class="panel" style="border:none;padding:0"><h3>Gate 3 — CHANGE</h3>' +
+        '<p class="muted">Leading watchlist. 0–1 flipped → STOP.</p>' +
         items.map(function (lab, idx) {
           return '<label class="check"><input type="checkbox" data-flip="' + idx + '"' +
             (run.g3.flips[idx] ? " checked" : "") + "/> <span>" + escapeHtml(lab) + "</span></label>";
@@ -536,25 +715,28 @@
         '<div class="row" style="margin-top:10px"><button type="button" class="stop" id="g3-stop">STOP</button>' +
         '<button type="button" class="go" id="g3-go">PROCEED</button></div><div id="g3-v"></div></div>';
     } else if (show === 4) {
-      html = '<div class="panel" style="border:none;padding:0"><h3>Gate 4 - GAP</h3>' +
-        '<p class="muted">Priced-in market/credit view vs field evidence. No gap -> STOP.</p>' +
+      var fn4 = (fieldNotes[run.clusterId] || "").trim();
+      html = '<div class="panel" style="border:none;padding:0"><h3>Gate 4 — GAP</h3>' +
+        '<p class="muted">Priced-in view vs field evidence. Prefer your field notes. No gap → STOP.</p>' +
+        (fn4 ? '<p class="muted">From Clusters field notes: ' + escapeHtml(fn4.slice(0, 240)) + "</p>" : "") +
         '<label class="field">Priced in<textarea id="g4-priced" class="blue">' + escapeHtml(run.g4.pricedIn || "") + "</textarea></label>" +
-        '<label class="field">Field evidence<textarea id="g4-ev" class="blue">' + escapeHtml(run.g4.evidence || "") + "</textarea></label>" +
+        '<label class="field">Field evidence<textarea id="g4-ev" class="blue">' + escapeHtml(run.g4.evidence || fn4) + "</textarea></label>" +
         '<label class="field">Named gap<textarea id="g4-gap" class="blue">' + escapeHtml(run.g4.gap || "") + "</textarea></label>" +
-        '<div class="row" style="margin-top:10px"><button type="button" class="stop" id="g4-stop">STOP - no gap</button>' +
+        '<div class="row" style="margin-top:10px"><button type="button" class="stop" id="g4-stop">STOP — no gap</button>' +
         '<button type="button" class="go" id="g4-go">PROCEED</button></div><div id="g4-v"></div></div>';
     } else {
       var sc5 = scoreCluster(run.clusterId);
       var div = divergence(run.clusterId);
       var conflict = sc5.health === "Unclear" || div.flag;
-      html = '<div class="panel" style="border:none;padding:0"><h3>Gate 5 - CONFLICT / DIVERGENCE</h3>' +
-        '<p class="muted">STOP if dials conflict (Unclear) or proxies diverge badly from cluster health.</p>' +
+      html = '<div class="panel" style="border:none;padding:0"><h3>Gate 5 — CONFLICT / DIVERGENCE</h3>' +
+        '<p class="muted">STOP if Unclear or leading indicators conflict with dials. Listed pulse is soft-only.</p>' +
         '<p>Health: <span class="pill ' + sc5.health.toLowerCase() + '">' + escapeHtml(sc5.health) + "</span></p>" +
         '<p class="muted">Divergence: ' + escapeHtml(div.reason) + (div.flag ? " · FLAG" : "") + "</p>" +
+        (div.pulseNote ? '<p class="muted">' + escapeHtml(div.pulseNote) + "</p>" : "") +
         '<label class="field">Notes<textarea id="g5-notes" class="blue">' + escapeHtml(run.g5.notes || "") + "</textarea></label>" +
         '<div class="row" style="margin-top:10px"><button type="button" class="stop" id="g5-stop">STOP</button>' +
-        '<button type="button" class="go" id="g5-go"' + (conflict ? " disabled" : "") + '>PROCEED / COMPLETE</button></div>' +
-        (conflict ? verdictBox("stop", "Auto-STOP candidate", div.flag ? div.reason : "Cluster Unclear - resolve dials") : "") +
+        '<button type="button" class="go" id="g5-go"' + (conflict ? " disabled" : "") + ">PROCEED / COMPLETE</button></div>" +
+        (conflict ? verdictBox("stop", "Auto-STOP candidate", div.flag ? div.reason : "Cluster Unclear — set dials / check indicators") : "") +
         '<div id="g5-v"></div></div>';
     }
     if (run.stoppedAt) {
@@ -579,12 +761,14 @@
     if (n === 1) {
       document.getElementById("g1-cluster").onchange = function (e) {
         run.clusterId = e.target.value;
+        activeCluster = run.clusterId;
         saveRun();
       };
       document.getElementById("g1-sentence").oninput = function (e) { run.g1.sentence = e.target.value; saveRun(); };
       document.getElementById("g1-stop").onclick = function () { stopHere("Gate 1: cannot state decision"); };
       document.getElementById("g1-go").onclick = function () {
         run.clusterId = document.getElementById("g1-cluster").value;
+        activeCluster = run.clusterId;
         var s = (document.getElementById("g1-sentence").value || "").trim();
         run.g1.sentence = s;
         if (!s) { stopHere("Gate 1: empty sentence"); return; }
@@ -626,13 +810,13 @@
         var sc = scoreCluster(run.clusterId);
         var div = divergence(run.clusterId);
         if (sc.health === "Unclear" || div.flag) {
-          stopHere(div.flag ? div.reason : "Gate 5: Unclear dials");
+          stopHere(div.flag ? div.reason : "Gate 5: Unclear");
           return;
         }
         run.stoppedAt = null;
         saveRun();
         document.getElementById("g5-v").innerHTML = verdictBox("go", "HEALTH CHECK COMPLETE",
-          escapeHtml(clusterById(run.clusterId).name) + " · " + sc.health + " · write the credit note");
+          escapeHtml(clusterById(run.clusterId).name) + " · " + sc.health + " · write the credit note from field notes + dials");
       };
     }
   }
@@ -652,9 +836,9 @@
       var res = await fetch("./data/snapshot.json", { cache: "no-store" });
       if (res.ok) snapshot = await res.json();
     } catch (e) {
-      snapshot = { market: {}, proxies: {}, proxy_map: {}, macros: {}, warnings: ["snapshot unreadable"] };
+      snapshot = { market: {}, leading: {}, proxies: {}, proxy_map: {}, macros: {}, warnings: ["snapshot unreadable"] };
     }
-    renderGates();
+    renderClusters();
   }
 
   boot();
