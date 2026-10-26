@@ -92,6 +92,12 @@
     if (saved && saved.g1) run = Object.assign(defaultRun(), saved);
   } catch (e) {}
   if (run.clusterId) activeCluster = run.clusterId;
+  if (!run.g1) run.g1 = { sentence: "" };
+  if (!run.g2) run.g2 = { notes: "" };
+  if (!run.g3) run.g3 = { flips: {} };
+  if (!run.g3.flips) run.g3.flips = {};
+  if (!run.g4) run.g4 = { pricedIn: "", evidence: "", gap: "" };
+  if (!run.g5) run.g5 = { notes: "" };
 
   function defaultRun() {
     return {
@@ -111,6 +117,43 @@
   function saveDials() { localStorage.setItem(LS_DIALS, JSON.stringify(dials)); }
   function saveField() { localStorage.setItem(LS_FIELD, JSON.stringify(fieldNotes)); }
   function saveRun() { localStorage.setItem(LS_RUN, JSON.stringify(run)); }
+
+  function $(id) { return document.getElementById(id); }
+  /** Null-safe: missing ID never throws (prevents HTML/JS cache-mismatch aborting all clicks). */
+  function bindClick(id, fn) {
+    var el = $(id);
+    if (!el) { console.warn("[gj-health] missing #" + id); return; }
+    el.onclick = fn;
+  }
+  function bindChange(id, fn) {
+    var el = $(id);
+    if (!el) { console.warn("[gj-health] missing #" + id); return; }
+    el.onchange = fn;
+  }
+  function bindInput(id, fn) {
+    var el = $(id);
+    if (!el) { console.warn("[gj-health] missing #" + id); return; }
+    el.oninput = fn;
+  }
+
+  function showBootErr(msg) {
+    var el = $("boot-err");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "boot-err";
+      el.setAttribute("style", "background:#450a0a;color:#fecaca;padding:10px 14px;font-size:.85rem;border-bottom:1px solid #ef4444");
+      document.body.insertBefore(el, document.body.firstChild);
+    }
+    el.textContent = "JS error (clicks may be dead): " + msg;
+  }
+  window.addEventListener("error", function (ev) {
+    showBootErr((ev && ev.message) || "unknown");
+  });
+  window.addEventListener("unhandledrejection", function (ev) {
+    var r = ev && ev.reason;
+    showBootErr(String((r && r.message) || r || "rejection"));
+  });
+
 
   function escapeHtml(s) {
     return String(s == null ? "" : s)
@@ -339,25 +382,28 @@
     if (name === "ops") renderGates();
   }
 
-  document.getElementById("tabs").addEventListener("click", function (e) {
+  (function () { var el = $("tabs"); if (!el) { console.warn("[gj-health] missing #tabs"); return; } el.addEventListener("click", function (e) {
     var t = e.target.closest(".tab");
     if (t) switchTab(t.dataset.tab);
-  });
+  }); })();
 
-  document.getElementById("btn-save-ai").onclick = function () {
-    var k = document.getElementById("ai-key").value.trim();
-    var m = document.getElementById("ai-model").value;
+  bindClick("btn-save-ai", function () {
+    var k = (($("ai-key") || {}).value || "").trim();
+    var m = (($("ai-model") || {}).value) || "deepseek-chat";
     if (k) localStorage.setItem(LS_AI_KEY, k);
     localStorage.setItem(LS_AI_MODEL, m);
-    var st = document.getElementById("ai-settings-status");
-    st.textContent = k ? "Saved locally." : "Model saved; key empty.";
-    st.className = "status ok";
-  };
-  document.getElementById("btn-clear-ai").onclick = function () {
+    var st = $("ai-settings-status");
+    if (st) {
+      st.textContent = k ? "Saved locally." : "Model saved; key empty.";
+      st.className = "status ok";
+    }
+  });
+  bindClick("btn-clear-ai", function () {
     localStorage.removeItem(LS_AI_KEY);
-    document.getElementById("ai-key").value = "";
-    document.getElementById("ai-settings-status").textContent = "Key cleared.";
-  };
+    if ($("ai-key")) $("ai-key").value = "";
+    var st = $("ai-settings-status");
+    if (st) st.textContent = "Key cleared.";
+  });
 
   function dirSelect(id, val) {
     var opts = ["unknown", "rising", "flat", "falling"];
@@ -481,23 +527,25 @@
     renderClusterDetail();
   }
 
-  document.getElementById("btn-save-cluster").onclick = function () {
+  bindClick("btn-save-cluster", function () {
     var id = activeCluster;
     var d = ensureClusterDials(id);
     DIAL_KEYS.forEach(function (dk) {
       var el = document.getElementById("dial-" + dk.key);
       if (el) d[dk.key] = el.value;
     });
-    fieldNotes[id] = document.getElementById("field-notes").value || "";
+    fieldNotes[id] = (($("field-notes") || {}).value) || "";
     saveDials();
     saveField();
-    var st = document.getElementById("cluster-status");
-    st.textContent = "Saved dials + field notes locally.";
-    st.className = "status ok";
+    var st = $("cluster-status");
+    if (st) {
+      st.textContent = "Saved dials + field notes locally.";
+      st.className = "status ok";
+    }
     renderClusters();
-  };
+  });
 
-  document.getElementById("btn-ai-dials").onclick = async function () {
+  bindClick("btn-ai-dials", async function () {
     var st = document.getElementById("cluster-status");
     st.className = "status loading"; st.textContent = "Calling DeepSeek…";
     var id = activeCluster;
@@ -539,7 +587,7 @@
     } catch (e) {
       st.className = "status err"; st.textContent = String(e.message || e);
     }
-  };
+  });
 
   function renderMacros() {
     var root = document.getElementById("macros-form");
@@ -575,7 +623,7 @@
       warns.map(function (w) { return "⚠ " + escapeHtml(w); }).join("<br/>") || "No fetch warnings.";
   }
 
-  document.getElementById("btn-save-macros").onclick = function () {
+  bindClick("btn-save-macros", function () {
     document.querySelectorAll("[data-macro]").forEach(function (el) {
       var k = el.getAttribute("data-macro");
       macros[k] = el.value;
@@ -585,11 +633,14 @@
       if (d) { macros[k + "_dir"] = d.value; macros._ev[k + "_dir"] = "manual"; }
     });
     saveMacros();
-    document.getElementById("macros-status").textContent = "Macros saved locally.";
-    document.getElementById("macros-status").className = "status ok";
-  };
+    var st = $("macros-status");
+    if (st) {
+      st.textContent = "Macros saved locally.";
+      st.className = "status ok";
+    }
+  });
 
-  document.getElementById("btn-ai-macros").onclick = async function () {
+  bindClick("btn-ai-macros", async function () {
     var st = document.getElementById("macros-status");
     st.className = "status loading"; st.textContent = "Calling DeepSeek…";
     try {
@@ -629,7 +680,7 @@
     } catch (e) {
       st.className = "status err"; st.textContent = String(e.message || e);
     }
-  };
+  });
 
   /* ---- Gates ---- */
   function verdictBox(kind, title, detail) {
@@ -703,7 +754,7 @@
         }).join("") + "</div>" +
         '<label class="field">Gate notes<textarea id="g2-notes" class="blue">' + escapeHtml(run.g2.notes || "") + "</textarea></label>" +
         '<div class="row" style="margin-top:10px"><button type="button" class="stop" id="g2-stop">STOP Unclear</button>' +
-        '<button type="button" class="go" id="g2-go"' + (sc.health === "Unclear" ? " disabled" : "") + ">PROCEED</button></div><div id=\"g2-v\"></div></div>";
+        '<button type="button" class="go" id="g2-go">PROCEED</button></div><div id="g2-v"></div></div>';
     } else if (show === 3) {
       var items = ["Power tariff / fuel cost flip", "Export order book flip", "Receivables days spike", "Policy/BIS/duty change", "Port congestion / freight flip", "Peer insolvency / WC stress news"];
       html = '<div class="panel" style="border:none;padding:0"><h3>Gate 3 — CHANGE</h3>' +
@@ -735,7 +786,7 @@
         (div.pulseNote ? '<p class="muted">' + escapeHtml(div.pulseNote) + "</p>" : "") +
         '<label class="field">Notes<textarea id="g5-notes" class="blue">' + escapeHtml(run.g5.notes || "") + "</textarea></label>" +
         '<div class="row" style="margin-top:10px"><button type="button" class="stop" id="g5-stop">STOP</button>' +
-        '<button type="button" class="go" id="g5-go"' + (conflict ? " disabled" : "") + ">PROCEED / COMPLETE</button></div>" +
+        '<button type="button" class="go" id="g5-go">PROCEED / COMPLETE</button></div>' +
         (conflict ? verdictBox("stop", "Auto-STOP candidate", div.flag ? div.reason : "Cluster Unclear — set dials / check indicators") : "") +
         '<div id="g5-v"></div></div>';
     }
@@ -759,54 +810,54 @@
 
   function wireGate(n) {
     if (n === 1) {
-      document.getElementById("g1-cluster").onchange = function (e) {
+      bindChange("g1-cluster", function (e) {
         run.clusterId = e.target.value;
         activeCluster = run.clusterId;
         saveRun();
-      };
-      document.getElementById("g1-sentence").oninput = function (e) { run.g1.sentence = e.target.value; saveRun(); };
-      document.getElementById("g1-stop").onclick = function () { stopHere("Gate 1: cannot state decision"); };
-      document.getElementById("g1-go").onclick = function () {
+      });
+      bindInput("g1-sentence", function (e) { run.g1.sentence = e.target.value; saveRun(); });
+      bindClick("g1-stop", function () { stopHere("Gate 1: cannot state decision"); });
+      bindClick("g1-go", function () {
         run.clusterId = document.getElementById("g1-cluster").value;
         activeCluster = run.clusterId;
         var s = (document.getElementById("g1-sentence").value || "").trim();
         run.g1.sentence = s;
         if (!s) { stopHere("Gate 1: empty sentence"); return; }
         proceed();
-      };
+      });
     } else if (n === 2) {
-      document.getElementById("g2-notes").oninput = function (e) { run.g2.notes = e.target.value; saveRun(); };
-      document.getElementById("g2-stop").onclick = function () { stopHere("Gate 2: Unclear regime"); };
-      document.getElementById("g2-go").onclick = function () {
+      bindInput("g2-notes", function (e) { run.g2.notes = e.target.value; saveRun(); });
+      bindClick("g2-stop", function () { stopHere("Gate 2: Unclear regime"); });
+      bindClick("g2-go", function () {
         if (scoreCluster(run.clusterId).health === "Unclear") { stopHere("Gate 2: Unclear on proceed"); return; }
         proceed();
-      };
+      });
     } else if (n === 3) {
       document.querySelectorAll("[data-flip]").forEach(function (el) {
         el.onchange = function () { run.g3.flips[el.dataset.flip] = el.checked; saveRun(); };
       });
-      document.getElementById("g3-stop").onclick = function () { stopHere("Gate 3: stopped"); };
-      document.getElementById("g3-go").onclick = function () {
+      bindClick("g3-stop", function () { stopHere("Gate 3: stopped"); });
+      bindClick("g3-go", function () {
         var c = Object.keys(run.g3.flips || {}).filter(function (k) { return run.g3.flips[k]; }).length;
         if (c <= 1) { stopHere("Gate 3: 0-1 flips"); return; }
         proceed();
-      };
+      });
     } else if (n === 4) {
-      document.getElementById("g4-priced").oninput = function (e) { run.g4.pricedIn = e.target.value; saveRun(); };
-      document.getElementById("g4-ev").oninput = function (e) { run.g4.evidence = e.target.value; saveRun(); };
-      document.getElementById("g4-gap").oninput = function (e) { run.g4.gap = e.target.value; saveRun(); };
-      document.getElementById("g4-stop").onclick = function () { stopHere("Gate 4: no gap"); };
-      document.getElementById("g4-go").onclick = function () {
+      bindInput("g4-priced", function (e) { run.g4.pricedIn = e.target.value; saveRun(); });
+      bindInput("g4-ev", function (e) { run.g4.evidence = e.target.value; saveRun(); });
+      bindInput("g4-gap", function (e) { run.g4.gap = e.target.value; saveRun(); });
+      bindClick("g4-stop", function () { stopHere("Gate 4: no gap"); });
+      bindClick("g4-go", function () {
         if (!(run.g4.gap || "").trim() || !(run.g4.pricedIn || "").trim() || !(run.g4.evidence || "").trim()) {
           stopHere("Gate 4: incomplete");
           return;
         }
         proceed();
-      };
+      });
     } else if (n === 5) {
-      document.getElementById("g5-notes").oninput = function (e) { run.g5.notes = e.target.value; saveRun(); };
-      document.getElementById("g5-stop").onclick = function () { stopHere("Gate 5: conflict/divergence"); };
-      document.getElementById("g5-go").onclick = function () {
+      bindInput("g5-notes", function (e) { run.g5.notes = e.target.value; saveRun(); });
+      bindClick("g5-stop", function () { stopHere("Gate 5: conflict/divergence"); });
+      bindClick("g5-go", function () {
         var sc = scoreCluster(run.clusterId);
         var div = divergence(run.clusterId);
         if (sc.health === "Unclear" || div.flag) {
@@ -817,28 +868,33 @@
         saveRun();
         document.getElementById("g5-v").innerHTML = verdictBox("go", "HEALTH CHECK COMPLETE",
           escapeHtml(clusterById(run.clusterId).name) + " · " + sc.health + " · write the credit note from field notes + dials");
-      };
+      });
     }
   }
 
-  document.getElementById("btn-reset-gates").onclick = function () {
+  bindClick("btn-reset-gates", function () {
     var cid = run.clusterId;
     run = defaultRun();
     run.clusterId = cid;
     saveRun();
     renderGates();
-  };
+  });
 
   async function boot() {
-    document.getElementById("ai-key").value = localStorage.getItem(LS_AI_KEY) || "";
-    document.getElementById("ai-model").value = localStorage.getItem(LS_AI_MODEL) || "deepseek-chat";
     try {
-      var res = await fetch("./data/snapshot.json", { cache: "no-store" });
-      if (res.ok) snapshot = await res.json();
+      if ($("ai-key")) $("ai-key").value = localStorage.getItem(LS_AI_KEY) || "";
+      if ($("ai-model")) $("ai-model").value = localStorage.getItem(LS_AI_MODEL) || "deepseek-chat";
+      try {
+        var res = await fetch("./data/snapshot.json", { cache: "no-store" });
+        if (res.ok) snapshot = await res.json();
+      } catch (e) {
+        snapshot = { market: {}, leading: {}, proxies: {}, proxy_map: {}, macros: {}, warnings: ["snapshot unreadable"] };
+      }
+      renderClusters();
     } catch (e) {
-      snapshot = { market: {}, leading: {}, proxies: {}, proxy_map: {}, macros: {}, warnings: ["snapshot unreadable"] };
+      showBootErr(String((e && e.message) || e));
+      console.error(e);
     }
-    renderClusters();
   }
 
   boot();

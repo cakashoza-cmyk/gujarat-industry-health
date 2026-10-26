@@ -95,6 +95,8 @@ details.pulse summary{cursor:pointer;color:var(--muted);font-size:.8rem}
       <label class="field"><textarea id="field-notes" class="blue" placeholder="What you heard on the ground: order book, power, receivables, competitor stress…"></textarea></label>
       <div class="row" style="margin-top:10px">
         <button type="button" class="primary" id="btn-save-cluster">Save dials + field notes</button>
+        <button type="button" class="primary" id="btn-save-dials" style="display:none" aria-hidden="true" tabindex="-1"></button>
+        <button type="button" class="ghost" id="btn-ai-proxies" style="display:none" aria-hidden="true" tabindex="-1"></button>
         <button type="button" class="ghost" id="btn-ai-dials">Suggest dials from indicators <span class="ai-tag">AI</span></button>
       </div>
       <div class="status" id="cluster-status"></div>
@@ -160,6 +162,6 @@ details.pulse summary{cursor:pointer;color:var(--muted);font-size:.8rem}
 
   <p class="footer-note">Snapshot: <code>data/snapshot.json</code> · Useful without DeepSeek · Owner: Akash Oza (Surat / HDFC South Gujarat credit context)</p>
 </main>
-<script src="./app.js"></script>
+<script src="./app.js?v=202610260918"></script>
 </body>
 </html>
